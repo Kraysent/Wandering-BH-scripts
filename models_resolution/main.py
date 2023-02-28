@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import glob
 from pathlib import Path
 from datetime import datetime
+import scriptslib
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -19,64 +20,27 @@ MAX_TIME = 5.0
 RESULTS_DIR = "models_resolution/results/{}"
 
 
-def _read_csv(path: str) -> Particles:
-    df = pd.read_csv(path, delimiter=" ")
-
-    particles = Particles(len(df))
-    particles.x = np.array(df.x) | SPACE_UNIT
-    particles.y = np.array(df.y) | SPACE_UNIT
-    particles.z = np.array(df.z) | SPACE_UNIT
-    particles.vx = np.array(df.vx) | VEL_UNIT
-    particles.vy = np.array(df.vy) | VEL_UNIT
-    particles.vz = np.array(df.vz) | VEL_UNIT
-    particles.mass = np.array(df.m) | MASS_UNIT
-
-    return particles
-
-
-def _downsample(particles: Particles, to: int) -> Particles:
-    coeff = len(particles) / to
-    subset_indices = np.random.choice(len(particles), to, replace=False)
-    new_particles = particles[subset_indices]
-    new_particles.mass = new_particles.mass * coeff
-
-    return new_particles
-
-
-def _leapfrog(particles: Particles):
-    acceleration, _ = pyfalcon.gravity(
-        particles.position.value_in(SPACE_UNIT),
-        particles.mass.value_in(MASS_UNIT),
-        EPS.value_in(SPACE_UNIT),
-    )
-
-    particles.velocity += acceleration * DT / 2 | VEL_UNIT
-    particles.position += particles.velocity * (DT | TIME_UNIT)
-
-    acceleration, _ = pyfalcon.gravity(
-        particles.position.value_in(SPACE_UNIT),
-        particles.mass.value_in(MASS_UNIT),
-        EPS.value_in(SPACE_UNIT),
-    )
-
-    particles.velocity += acceleration * DT / 2 | VEL_UNIT
-
-    return particles
-
-
 def _prepare_axes(dist_axes, bound_mass_axes):
+    plt.rc("font", size=10)
+    fontoptions = dict(fontsize=12)
+
     for ax in dist_axes, bound_mass_axes:
         ax.grid(True)
         ax.set_ylim(0)
-        ax.legend()
-        ax.set_xlabel("Time, Gyr")
+        ax.set_xlabel("Time, Gyr", **fontoptions)
+
+        # sort labels in axes
+        handles, labels = ax.get_legend_handles_labels()
+        order = np.argsort([int(l) for l in labels])
+        ax.legend([handles[i] for i in order], [labels[i] for i in order])
 
     dist_axes.set_title("Distance between centres of mass of two galaxies\nfor different number of particles")
-    dist_axes.set_ylabel("Distance, kpc")
+    dist_axes.set_ylabel("Distance, kpc", **fontoptions)
 
     bound_mass_axes.set_title("Bound mass of the satellite for different number of particles")
-    bound_mass_axes.set_ylabel("Bound mass, 232500 * MSun")
-    bound_mass_axes.ticklabel_format(axis='y', style="sci", scilimits=(0,0))
+    bound_mass_axes.set_ylabel("Bound mass, 232500 * MSun", **fontoptions)
+    bound_mass_axes.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
 
 def model(save_trajectories: bool = False, save: bool = False):
     samples = [
@@ -91,7 +55,7 @@ def model(save_trajectories: bool = False, save: bool = False):
     fig1, ax1 = plt.subplots()
     fig2, ax2 = plt.subplots()
 
-    vector_length = lambda v, unit, axis = 0: (v.value_in(unit) ** 2).sum(axis = axis) ** 0.5
+    vector_length = lambda v, unit, axis=0: (v.value_in(unit) ** 2).sum(axis=axis) ** 0.5
 
     def distance(host: Particles, satellite: Particles) -> float:
         return vector_length(host.center_of_mass() - satellite.center_of_mass(), SPACE_UNIT)
@@ -126,15 +90,14 @@ def model(save_trajectories: bool = False, save: bool = False):
             if i >= NUMBER_OF_ITERATIONS:
                 break
 
-
         return galaxy.total_mass().value_in(MASS_UNIT)
 
     for host_sample, sat_sample in samples:
-        host_particles = _downsample(
-            _read_csv("models_resolution/models/host.csv"), host_sample
+        host_particles = scriptslib.downsample(
+            scriptslib.read_csv("models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT), host_sample
         )
-        sat_particles = _downsample(
-            _read_csv("models_resolution/models/sat.csv"), sat_sample
+        sat_particles = scriptslib.downsample(
+            scriptslib.read_csv("models_resolution/models/sat.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT), sat_sample
         )
 
         sat_particles.position += [100, 0, 0] | units.kpc
@@ -150,7 +113,7 @@ def model(save_trajectories: bool = False, save: bool = False):
         parameters["bound_mass"] = [0] * len(parameters)
 
         for i in parameters.index:
-            particles = _leapfrog(particles)
+            particles = scriptslib.leapfrog(particles, EPS, DT | TIME_UNIT, SPACE_UNIT, VEL_UNIT, MASS_UNIT, TIME_UNIT)
 
             parameters.at[i, "distances"] = distance(particles[:host_sample], particles[-sat_sample:])
             parameters.at[i, "bound_mass"] = bound_mass(particles[-sat_sample:])
@@ -159,12 +122,8 @@ def model(save_trajectories: bool = False, save: bool = False):
                 f"{datetime.now().strftime('%H:%M')}\t{parameters.times[i]:.02f}\t{parameters.distances[i]:.02f}\t{parameters.bound_mass[i]:.02f}"
             )
 
-        ax1.plot(
-            parameters.times, parameters.distances, label=f"{host_sample + sat_sample}"
-        )
-        ax2.plot(
-            parameters.times, parameters.bound_mass, label=f"{host_sample + sat_sample}"
-        )
+        ax1.plot(parameters.times, parameters.distances, label=f"{host_sample + sat_sample}")
+        ax2.plot(parameters.times, parameters.bound_mass, label=f"{host_sample + sat_sample}")
 
         if save_trajectories:
             parameters.to_csv(RESULTS_DIR.format(f"{host_sample+sat_sample}.csv"), index=False)
@@ -188,12 +147,8 @@ def load(save: str | None = None):
         print(f"Reading {filename}")
         number_of_particles = int(Path(filename).stem)
         parameters = pd.read_csv(filename, index_col=None)
-        ax1.plot(
-            parameters.times, parameters.distances, label=f"{number_of_particles}"
-        )
-        ax2.plot(
-            parameters.times, parameters.bound_mass, label=f"{number_of_particles}"
-        )
+        ax1.plot(parameters.times, parameters.distances, label=f"{number_of_particles}")
+        ax2.plot(parameters.times, parameters.bound_mass, label=f"{number_of_particles}")
 
     _prepare_axes(ax1, ax2)
 
