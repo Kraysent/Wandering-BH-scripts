@@ -5,7 +5,12 @@ import numpy as np
 import pyfalcon
 
 
-def read_csv(path: str, space_unit: core.named_unit, vel_unit: core.named_unit, mass_unit: core.named_unit) -> Particles:
+def read_csv(
+    path: str,
+    space_unit: core.named_unit,
+    vel_unit: core.named_unit,
+    mass_unit: core.named_unit,
+) -> Particles:
     df = pd.read_csv(path, delimiter=" ")
 
     particles = Particles(len(df))
