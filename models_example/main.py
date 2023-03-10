@@ -88,10 +88,6 @@ def model(save: bool, plot: bool):
     particles.position -= particles.center_of_mass()
     particles.velocity -= particles.center_of_mass_velocity()
 
-    positions = pd.DataFrame(
-        columns=["time", "host_x", "host_y", "host_z", "sat_x", "sat_y", "sat_z"]
-    )
-
     time = 0
     i = 0
 
@@ -107,11 +103,6 @@ def model(save: bool, plot: bool):
                 MASS_UNIT,
                 TIME_UNIT,
             )
-            positions.loc[i] = [
-                time,
-                *particles[:HOST_N].center_of_mass().value_in(SPACE_UNIT),
-                *particles[-SAT_N:].center_of_mass().value_in(SPACE_UNIT),
-            ]
 
             if i % PLOT_ITERATION == 0:
                 # first 20 percent of each subset is barion matter so plotting only it
@@ -155,9 +146,6 @@ def model(save: bool, plot: bool):
 
             i += 1
             time += DT
-    except KeyboardInterrupt:
-        if save:
-            positions.to_csv(RESULTS_DIR.format("positions.csv"))
 
 
 def plot_plane(save: bool):
@@ -169,8 +157,6 @@ def plot_plane(save: bool):
             [2.5, 3.25],
         ]
     )
-
-    positions = pd.read_csv(RESULTS_DIR.format("positions.csv"))
 
     fig, axes = plt.subplots(*times.shape, sharex="all", sharey="all")
 
@@ -216,8 +202,6 @@ def plot_plane(save: bool):
             axes[i, j].imshow(
                 rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto"
             )
-
-            axes[i, j].plot(positions[positions["time"] <= times[i, j]]["sat_x"], positions[positions["time"] <= times[i, j]]["sat_y"], 'r-')
 
     if save:
         plt.savefig(RESULTS_DIR.format("result.pdf"))
