@@ -3,7 +3,11 @@ from amuse.lab import units
 import scriptslib
 import numpy as np
 from matplotlib.patches import Patch
+from matplotlib import figure
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+import matplotlib.font_manager as fm
+import pandas as pd
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -50,7 +54,11 @@ def _prepare_axes(ax):
     )
 
 
-def model(save: bool):
+def model(save: bool, plot: bool):
+    if plot:
+        plot_plane(save)
+        return
+
     fig, ax = plt.subplots()
     _prepare_axes(ax)
     plt.tight_layout()
@@ -80,49 +88,138 @@ def model(save: bool):
     particles.position -= particles.center_of_mass()
     particles.velocity -= particles.center_of_mass_velocity()
 
+    positions = pd.DataFrame(
+        columns=["time", "host_x", "host_y", "host_z", "sat_x", "sat_y", "sat_z"]
+    )
+
     time = 0
     i = 0
 
-    while time < MAX_TIME:
-        print(f"{datetime.now().strftime('%H:%M:%S')}\t{time:.02f}")
-        particles = scriptslib.leapfrog(
-            particles, EPS, DT | TIME_UNIT, SPACE_UNIT, VEL_UNIT, MASS_UNIT, TIME_UNIT
-        )
+    try:
+        while time < MAX_TIME:
+            print(f"{datetime.now().strftime('%H:%M:%S')}\t{time:.02f}")
+            particles = scriptslib.leapfrog(
+                particles,
+                EPS,
+                DT | TIME_UNIT,
+                SPACE_UNIT,
+                VEL_UNIT,
+                MASS_UNIT,
+                TIME_UNIT,
+            )
+            positions.loc[i] = [
+                time,
+                *particles[:HOST_N].center_of_mass().value_in(SPACE_UNIT),
+                *particles[-SAT_N:].center_of_mass().value_in(SPACE_UNIT),
+            ]
 
-        if i % PLOT_ITERATION == 0:
-            # first 20 percent of each subset is barion matter so plotting only it
-            host, sat = (
-                particles[: int(0.2 * HOST_N)],
-                particles[-SAT_N : -int(SAT_N * 0.8)],
+            if i % PLOT_ITERATION == 0:
+                # first 20 percent of each subset is barion matter so plotting only it
+                host, sat = (
+                    particles[: int(0.2 * HOST_N)],
+                    particles[-SAT_N : -int(SAT_N * 0.8)],
+                )
+
+                host_hist, _, _ = np.histogram2d(
+                    host.x.value_in(SPACE_UNIT),
+                    host.y.value_in(SPACE_UNIT),
+                    RESOLUTION,
+                    [EXTENT[:2], EXTENT[2:]],
+                )
+                sat_hist, _, _ = np.histogram2d(
+                    sat.x.value_in(SPACE_UNIT),
+                    sat.y.value_in(SPACE_UNIT),
+                    RESOLUTION,
+                    [EXTENT[:2], EXTENT[2:]],
+                )
+
+                host_hist = _log_scale(host_hist.T[::-1, :], low=0.4)
+                sat_hist = _log_scale(sat_hist.T[::-1, :], low=0.4)
+
+                rgb_map = np.stack(
+                    [host_hist, np.zeros(host_hist.shape), sat_hist], axis=2
+                )
+                rgb_map[(rgb_map[:, :] ** 2).sum(axis=2) == 0] = 1
+
+                ax.imshow(
+                    rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto"
+                )
+                ax.set_title(f"{time:.02f} Gyr")
+
+                if save:
+                    np.save(RESULTS_DIR.format(f"bins/{time:.02f}.npy"), rgb_map)
+                    fig.savefig(RESULTS_DIR.format(f"pdfs/{time:.02f}.pdf"))
+                else:
+                    fig.canvas.draw()
+                    plt.pause(1e-3)
+
+            i += 1
+            time += DT
+    except KeyboardInterrupt:
+        if save:
+            positions.to_csv(RESULTS_DIR.format("positions.csv"))
+
+
+def plot_plane(save: bool):
+    # using ndarray to ensure that this is matrix and not list of lists
+    times = np.array(
+        [
+            [0.0, 0.5],
+            [1.0, 1.75],
+            [2.5, 3.25],
+        ]
+    )
+
+    positions = pd.read_csv(RESULTS_DIR.format("positions.csv"))
+
+    fig, axes = plt.subplots(*times.shape, sharex="all", sharey="all")
+
+    # prepare axes
+    plt.tight_layout()
+    fig.set_size_inches(figure.figaspect(3 / 2) * 2)
+    fig.subplots_adjust(wspace=0, hspace=0)
+
+    for i, row in enumerate(axes):
+        for j, ax in enumerate(row):
+            ax.set_title(f"{times[i, j]:.02f} Gyr", y=1.0, pad=-14)
+            ax.set_box_aspect(1)
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+    axes[0, 1].legend(
+        handles=[
+            Patch(facecolor="r", edgecolor="r", label="Host"),
+            Patch(facecolor="b", edgecolor="b", label="Satellite"),
+        ]
+    )
+
+    scalebar = AnchoredSizeBar(
+        axes[0, 0].transData,
+        50,
+        "50 kpc",
+        "lower right",
+        pad=0.4,
+        color="black",
+        frameon=False,
+        size_vertical=1,
+        fontproperties=fm.FontProperties(size=14),
+    )
+
+    axes[0, 1].add_artist(scalebar)
+
+    for i in range(times.shape[0]):
+        for j in range(times.shape[1]):
+            bin_filename = RESULTS_DIR.format(f"bins/{times[i, j]:.02f}.npy")
+            rgb_map = np.load(bin_filename)
+            axes[i, j].imshow(
+                rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto"
             )
 
-            host_hist, _, _ = np.histogram2d(
-                host.x.value_in(SPACE_UNIT),
-                host.y.value_in(SPACE_UNIT),
-                RESOLUTION,
-                [EXTENT[:2], EXTENT[2:]],
-            )
-            sat_hist, _, _ = np.histogram2d(
-                sat.x.value_in(SPACE_UNIT),
-                sat.y.value_in(SPACE_UNIT),
-                RESOLUTION,
-                [EXTENT[:2], EXTENT[2:]],
-            )
+            axes[i, j].plot(positions[positions["time"] <= times[i, j]]["sat_x"], positions[positions["time"] <= times[i, j]]["sat_y"], 'r-')
 
-            host_hist = _log_scale(host_hist.T[::-1, :], low=0.4)
-            sat_hist = _log_scale(sat_hist.T[::-1, :], low=0.4)
-
-            rgb_map = np.stack([host_hist, np.zeros(host_hist.shape), sat_hist], axis=2)
-            rgb_map[(rgb_map[:, :] ** 2).sum(axis=2) == 0] = 1
-
-            ax.imshow(rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto")
-            ax.set_title(f"{time:.02f} Gyr")
-
-            if save:
-                fig.savefig(RESULTS_DIR.format(f"{time:.02f}.pdf"))
-            else:
-                fig.canvas.draw()
-                plt.pause(1e-3)
-
-        i += 1
-        time += DT
+    if save:
+        plt.savefig(RESULTS_DIR.format("result.pdf"))
+    else:
+        plt.show()

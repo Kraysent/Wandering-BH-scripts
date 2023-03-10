@@ -67,7 +67,9 @@ def model():
         )
 
         if i % PLOT_ITERATION == 0:
-            dsts = ((particles.position - BH_INIT_POS).value_in(units.kpc) ** 2).sum(axis=1) ** 0.5
+            dsts = ((particles.position - BH_INIT_POS).value_in(units.kpc) ** 2).sum(
+                axis=1
+            ) ** 0.5
             dsts_filter = dsts < 3
             vis_particles = particles[dsts_filter]
             ax.clear()
