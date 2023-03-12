@@ -7,6 +7,7 @@ import glob
 from pathlib import Path
 from datetime import datetime
 import scriptslib
+from scriptslib import mnras
 from matplotlib import figure
 
 SPACE_UNIT = units.kpc
@@ -22,22 +23,20 @@ RESULTS_DIR = "models_resolution/results/{}"
 
 
 def _prepare_axes(dist_axes, bound_mass_axes):
-    plt.rc("font", size=10)
-    fontoptions = dict(fontsize=12)
-
     for ax in dist_axes, bound_mass_axes:
         ax.grid(True)
         ax.set_ylim(0)
         ax.set_xlim(0, 5)
+        ax.tick_params(axis='both', which='major', labelsize=mnras.FONT_SIZE)
 
     # sort labels in axes
     handles, labels = dist_axes.get_legend_handles_labels()
     order = np.argsort([int(l) for l in labels])
-    dist_axes.legend([handles[i] for i in order], [labels[i] for i in order])
-    dist_axes.set_ylabel("Distance, kpc", **fontoptions)
+    dist_axes.legend([handles[i] for i in order], [labels[i] for i in order], prop={'size': mnras.FONT_SIZE})
+    dist_axes.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
 
-    bound_mass_axes.set_xlabel("Time, Gyr", **fontoptions)
-    bound_mass_axes.set_ylabel("Bound mass, $10^{11}$ MSun", **fontoptions)
+    bound_mass_axes.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
+    bound_mass_axes.set_ylabel("Bound mass, $10^{11}$ MSun", fontsize=mnras.FONT_SIZE)
     bound_mass_axes.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
 
 
@@ -52,7 +51,7 @@ def model(save_trajectories: bool = False, save: bool = False):
     ]
 
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.set_size_inches(figure.figaspect(1) * 2)
+    fig.set_size_inches(mnras.size_from_aspect(1))
     fig.subplots_adjust(wspace=0, hspace=0)
 
     vector_length = (
@@ -170,7 +169,7 @@ def load(save: str | None = None):
     filenames = glob.glob(RESULTS_DIR.format("*.csv"))
 
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.set_size_inches(figure.figaspect(1) * 2)
+    fig.set_size_inches(mnras.size_from_aspect(1))
     fig.subplots_adjust(wspace=0, hspace=0)
 
     for filename in filenames:

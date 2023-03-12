@@ -1,13 +1,13 @@
 from datetime import datetime
 from amuse.lab import units
 import scriptslib
+from scriptslib import mnras
 import numpy as np
 from matplotlib.patches import Patch
 from matplotlib import figure
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import matplotlib.font_manager as fm
-import pandas as pd
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -157,23 +157,26 @@ def plot_plane(save: bool):
 
     # prepare axes
     plt.tight_layout()
-    fig.set_size_inches(figure.figaspect(3 / 2) * 2)
+    # fig.set_size_inches(figure.figaspect(3 / 2) * 2)
+    fig.set_size_inches(mnras.size_from_aspect(3 / 2))
     fig.subplots_adjust(wspace=0, hspace=0)
 
     for i, row in enumerate(axes):
         for j, ax in enumerate(row):
-            ax.set_title(f"{times[i, j]:.02f} Gyr", y=1.0, pad=-14)
+            ax.set_title(f"{times[i, j]:.02f} Gyr", y=1.0, pad=-14, fontsize=mnras.FONT_SIZE)
             ax.set_box_aspect(1)
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             ax.set_xticks([])
             ax.set_yticks([])
 
-    axes[0, 1].legend(
+    axes[0, 0].legend(
         handles=[
             Patch(facecolor="r", edgecolor="r", label="Host"),
             Patch(facecolor="b", edgecolor="b", label="Satellite"),
-        ]
+        ],
+        prop={'size': mnras.FONT_SIZE},
+        loc="lower right"
     )
 
     scalebar = AnchoredSizeBar(
@@ -185,7 +188,7 @@ def plot_plane(save: bool):
         color="black",
         frameon=False,
         size_vertical=1,
-        fontproperties=fm.FontProperties(size=14),
+        fontproperties=fm.FontProperties(size=mnras.FONT_SIZE),
     )
 
     axes[0, 1].add_artist(scalebar)

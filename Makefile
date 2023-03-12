@@ -6,3 +6,9 @@ resolution-save:
 
 resolution-show: 
 	python3 main.py models-resolution -c
+
+example-save:
+	python3 main.py models-example --plot -s
+
+example-show:
+	python3 main.py models-example --plot
