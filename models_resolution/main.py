@@ -7,6 +7,7 @@ import glob
 from pathlib import Path
 from datetime import datetime
 import scriptslib
+from matplotlib import figure
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -27,22 +28,16 @@ def _prepare_axes(dist_axes, bound_mass_axes):
     for ax in dist_axes, bound_mass_axes:
         ax.grid(True)
         ax.set_ylim(0)
-        ax.set_xlabel("Time, Gyr", **fontoptions)
+        ax.set_xlim(0, 5)
 
-        # sort labels in axes
-        handles, labels = ax.get_legend_handles_labels()
-        order = np.argsort([int(l) for l in labels])
-        ax.legend([handles[i] for i in order], [labels[i] for i in order])
-
-    dist_axes.set_title(
-        "Distance between centres of mass of two galaxies\nfor different number of particles"
-    )
+    # sort labels in axes
+    handles, labels = dist_axes.get_legend_handles_labels()
+    order = np.argsort([int(l) for l in labels])
+    dist_axes.legend([handles[i] for i in order], [labels[i] for i in order])
     dist_axes.set_ylabel("Distance, kpc", **fontoptions)
 
-    bound_mass_axes.set_title(
-        "Bound mass of the satellite for different number of particles"
-    )
-    bound_mass_axes.set_ylabel("Bound mass, 232500 * MSun", **fontoptions)
+    bound_mass_axes.set_xlabel("Time, Gyr", **fontoptions)
+    bound_mass_axes.set_ylabel("Bound mass, $10^{11}$ MSun", **fontoptions)
     bound_mass_axes.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
 
 
@@ -56,8 +51,9 @@ def model(save_trajectories: bool = False, save: bool = False):
         (1000000, 500000),
     ]
 
-    fig1, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+    fig.set_size_inches(figure.figaspect(1) * 2)
+    fig.subplots_adjust(wspace=0, hspace=0)
 
     vector_length = (
         lambda v, unit, axis=0: (v.value_in(unit) ** 2).sum(axis=axis) ** 0.5
@@ -152,7 +148,9 @@ def model(save_trajectories: bool = False, save: bool = False):
             parameters.times, parameters.distances, label=f"{host_sample + sat_sample}"
         )
         ax2.plot(
-            parameters.times, parameters.bound_mass, label=f"{host_sample + sat_sample}"
+            parameters.times,
+            parameters.bound_mass * 232500 / 1e11,
+            label=f"{host_sample + sat_sample}",
         )
 
         if save_trajectories:
@@ -163,8 +161,7 @@ def model(save_trajectories: bool = False, save: bool = False):
     _prepare_axes(ax1, ax2)
 
     if save:
-        fig1.savefig(RESULTS_DIR.format("distance.pdf"))
-        fig2.savefig(RESULTS_DIR.format("bound_mass.pdf"))
+        fig.savefig(RESULTS_DIR.format("result.pdf"), pad_inches=0, bbox_inches="tight")
     else:
         plt.show()
 
@@ -172,8 +169,9 @@ def model(save_trajectories: bool = False, save: bool = False):
 def load(save: str | None = None):
     filenames = glob.glob(RESULTS_DIR.format("*.csv"))
 
-    fig1, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+    fig.set_size_inches(figure.figaspect(1) * 2)
+    fig.subplots_adjust(wspace=0, hspace=0)
 
     for filename in filenames:
         print(f"Reading {filename}")
@@ -181,13 +179,14 @@ def load(save: str | None = None):
         parameters = pd.read_csv(filename, index_col=None)
         ax1.plot(parameters.times, parameters.distances, label=f"{number_of_particles}")
         ax2.plot(
-            parameters.times, parameters.bound_mass, label=f"{number_of_particles}"
+            parameters.times,
+            parameters.bound_mass * 232500 / 1e11,
+            label=f"{number_of_particles}",
         )
 
     _prepare_axes(ax1, ax2)
 
     if save:
-        fig1.savefig(RESULTS_DIR.format("distance.pdf"))
-        fig2.savefig(RESULTS_DIR.format("bound_mass.pdf"))
+        fig.savefig(RESULTS_DIR.format("result.pdf"), pad_inches=0, bbox_inches="tight")
     else:
         plt.show()

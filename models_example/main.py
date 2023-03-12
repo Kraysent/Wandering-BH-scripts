@@ -126,14 +126,10 @@ def model(save: bool, plot: bool):
             host_hist = _log_scale(host_hist.T[::-1, :], low=0.4)
             sat_hist = _log_scale(sat_hist.T[::-1, :], low=0.4)
 
-            rgb_map = np.stack(
-                [host_hist, np.zeros(host_hist.shape), sat_hist], axis=2
-            )
+            rgb_map = np.stack([host_hist, np.zeros(host_hist.shape), sat_hist], axis=2)
             rgb_map[(rgb_map[:, :] ** 2).sum(axis=2) == 0] = 1
 
-            ax.imshow(
-                rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto"
-            )
+            ax.imshow(rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto")
             ax.set_title(f"{time:.02f} Gyr")
 
             if save:
@@ -203,6 +199,6 @@ def plot_plane(save: bool):
             )
 
     if save:
-        plt.savefig(RESULTS_DIR.format("result.pdf"))
+        plt.savefig(RESULTS_DIR.format("result.pdf"), pad_inches=0, bbox_inches="tight")
     else:
         plt.show()
