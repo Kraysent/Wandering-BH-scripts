@@ -1,3 +1,9 @@
+.PHONY: style
+
+style:
+	black .
+	isort .
+
 resolution-compute:
 	python3 main.py models-resolution -s -st
 

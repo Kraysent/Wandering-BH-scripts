@@ -1,8 +1,7 @@
-from amuse.lab import Particles, ScalarQuantity
-from amuse.units import core
-import pandas as pd
 import numpy as np
-import pyfalcon
+import pandas as pd
+from amuse.lab import Particles
+from amuse.units import core
 
 
 def read_csv(
@@ -32,36 +31,3 @@ def downsample(particles: Particles, to: int) -> Particles:
     new_particles.mass = new_particles.mass * coeff
 
     return new_particles
-
-
-def leapfrog(
-    particles: Particles,
-    eps: ScalarQuantity,
-    dt: ScalarQuantity,
-    space_unit: core.named_unit,
-    vel_unit: core.named_unit,
-    mass_unit: core.named_unit,
-    time_unit: core.named_unit,
-) -> Particles:
-    """
-    Performs one step of integration using pyfalcon.
-    """
-    dt = dt.value_in(time_unit)
-    acceleration, _ = pyfalcon.gravity(
-        particles.position.value_in(space_unit),
-        particles.mass.value_in(mass_unit),
-        eps.value_in(space_unit),
-    )
-
-    particles.velocity += acceleration * dt / 2 | vel_unit
-    particles.position += particles.velocity * (dt | time_unit)
-
-    acceleration, _ = pyfalcon.gravity(
-        particles.position.value_in(space_unit),
-        particles.mass.value_in(mass_unit),
-        eps.value_in(space_unit),
-    )
-
-    particles.velocity += acceleration * dt / 2 | vel_unit
-
-    return particles

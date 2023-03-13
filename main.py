@@ -1,8 +1,10 @@
 import click
-import models_resolution.main as resolution
-import models_example.main as example
-import dynamical_friction_example.main as friction_example
 import matplotlib.pyplot as plt
+
+import dynamical_friction_example.main as friction_example
+import models_example.main as example
+import models_resolution.main as resolution
+import models_velocity_vector.main as velocities
 
 
 class CommonCommand(click.core.Command):
@@ -51,14 +53,14 @@ def models_resolution(save, save_trajectories, cached, style):
         resolution.load(save)
 
 
+@cli.command(cls=CommonCommand)
 @click.option(
     "-s",
     "--save",
     is_flag=True,
     type=bool,
-    help="Save to PDF file or just show figures?",
+    help="Save to PDF or just show figures?",
 )
-@cli.command(cls=CommonCommand)
 @click.option(
     "-p",
     "--plot",
@@ -69,6 +71,30 @@ def models_resolution(save, save_trajectories, cached, style):
 def models_example(save, plot, style):
     plt.style.use(style)
     example.model(save, plot)
+
+
+@cli.command(cls=CommonCommand)
+@click.option(
+    "-p",
+    "--plot",
+    is_flag=True,
+    type=bool,
+    help="Show data that was generated when running without this flag.",
+)
+@click.option(
+    "-s",
+    "--save",
+    is_flag=True,
+    type=bool,
+    help="Save to PDF or just show figures?",
+)
+def models_velocities(plot, save, style):
+    plt.style.use(style)
+
+    if plot:
+        velocities.plot(save)
+    else:
+        velocities.compute()
 
 
 @cli.command(cls=CommonCommand)

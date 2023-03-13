@@ -1,14 +1,15 @@
-from amuse.lab import Particles, units
-import pandas as pd
-import numpy as np
-import pyfalcon
-import matplotlib.pyplot as plt
 import glob
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyfalcon
+from amuse.lab import Particles, units
+
 import scriptslib
-from scriptslib import mnras
-from matplotlib import figure
+from scriptslib import mnras, physics
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -27,12 +28,16 @@ def _prepare_axes(dist_axes, bound_mass_axes):
         ax.grid(True)
         ax.set_ylim(0)
         ax.set_xlim(0, 5)
-        ax.tick_params(axis='both', which='major', labelsize=mnras.FONT_SIZE)
+        ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
 
     # sort labels in axes
     handles, labels = dist_axes.get_legend_handles_labels()
     order = np.argsort([int(l) for l in labels])
-    dist_axes.legend([handles[i] for i in order], [labels[i] for i in order], prop={'size': mnras.FONT_SIZE})
+    dist_axes.legend(
+        [handles[i] for i in order],
+        [labels[i] for i in order],
+        prop={"size": mnras.FONT_SIZE},
+    )
     dist_axes.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
 
     bound_mass_axes.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
@@ -57,11 +62,6 @@ def model(save_trajectories: bool = False, save: bool = False):
     vector_length = (
         lambda v, unit, axis=0: (v.value_in(unit) ** 2).sum(axis=axis) ** 0.5
     )
-
-    def distance(host: Particles, satellite: Particles) -> float:
-        return vector_length(
-            host.center_of_mass() - satellite.center_of_mass(), SPACE_UNIT
-        )
 
     def bound_mass(galaxy: Particles) -> float:
         NUMBER_OF_ITERATIONS = 15
@@ -124,7 +124,7 @@ def model(save_trajectories: bool = False, save: bool = False):
         parameters["bound_mass"] = [0] * len(parameters)
 
         for i in parameters.index:
-            particles = scriptslib.leapfrog(
+            particles = physics.leapfrog(
                 particles,
                 EPS,
                 DT | TIME_UNIT,
@@ -134,7 +134,7 @@ def model(save_trajectories: bool = False, save: bool = False):
                 TIME_UNIT,
             )
 
-            parameters.at[i, "distances"] = distance(
+            parameters.at[i, "distances"] = physics.distance(
                 particles[:host_sample], particles[-sat_sample:]
             )
             parameters.at[i, "bound_mass"] = bound_mass(particles[-sat_sample:])

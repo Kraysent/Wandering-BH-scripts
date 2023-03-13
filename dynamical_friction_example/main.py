@@ -1,7 +1,9 @@
-from amuse.lab import Particles, Particle, units
+from datetime import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
+from amuse.lab import Particle, Particles, units
+
 import scriptslib
 
 ## This command draws the position of the BH incorrectly for some reason. TODO: check this one more time.
