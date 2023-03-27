@@ -1,14 +1,12 @@
-import matplotlib.pyplot as plt
 from datetime import datetime
-import glob
-from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from amuse.lab import units
 
 import scriptslib
-from scriptslib import physics, mnras
+from scriptslib import mnras, physics
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -25,29 +23,26 @@ VEL_ABS = 180
 RESULTS_DIR = "models_velocity_vector/results/{}"
 MODELS_DIR = "models_velocity_vector/models/{}"
 
-params = [
-    (0, "r"),
-    (45, "g"),
-    (90, "b")
-]
+params = [(0, "r"), (45, "g"), (90, "b")]
+
 
 def compute():
     for angle, _ in params:
         angle = np.deg2rad(angle)
         host_particles = scriptslib.downsample(
-            scriptslib.read_csv(
-                MODELS_DIR.format("host.csv"), SPACE_UNIT, VEL_UNIT, MASS_UNIT
-            ),
+            scriptslib.read_csv(MODELS_DIR.format("host.csv"), SPACE_UNIT, VEL_UNIT, MASS_UNIT),
             HOST_SAMPLE,
         )
         sat_particles = scriptslib.downsample(
-            scriptslib.read_csv(
-                MODELS_DIR.format("sat.csv"), SPACE_UNIT, VEL_UNIT, MASS_UNIT
-            ),
+            scriptslib.read_csv(MODELS_DIR.format("sat.csv"), SPACE_UNIT, VEL_UNIT, MASS_UNIT),
             SAT_SAMPLE,
         )
         sat_particles.position += [100, 0, 0] | units.kpc
-        sat_particles.velocity += [-np.cos(angle) * VEL_ABS, np.sin(angle) * VEL_ABS, 0] | VEL_UNIT
+        sat_particles.velocity += [
+            -np.cos(angle) * VEL_ABS,
+            np.sin(angle) * VEL_ABS,
+            0,
+        ] | VEL_UNIT
 
         particles = host_particles
         particles.add_particles(sat_particles)
@@ -68,11 +63,11 @@ def compute():
                 TIME_UNIT,
             )
 
-            bound_subset = physics.bound_subset(
-                particles[-SAT_SAMPLE:], EPS, SPACE_UNIT, MASS_UNIT, VEL_UNIT
-            )
+            bound_subset = physics.bound_subset(particles[-SAT_SAMPLE:], EPS, SPACE_UNIT, MASS_UNIT, VEL_UNIT)
             parameters.at[i, "distances"] = physics.distance(
-                particles[:HOST_SAMPLE], bound_subset, SPACE_UNIT,
+                particles[:HOST_SAMPLE],
+                bound_subset,
+                SPACE_UNIT,
             )
             parameters.at[i, "bound_mass"] = bound_subset.total_mass().value_in(units.MSun)
 
@@ -81,6 +76,7 @@ def compute():
             )
 
         parameters.to_csv(RESULTS_DIR.format(f"{np.rad2deg(angle):.00f}.csv"), index=False)
+
 
 def _prepare_axes(dist_axes, bound_mass_axes):
     for ax in dist_axes, bound_mass_axes:
@@ -111,12 +107,17 @@ def plot(save: bool):
         max_bound_mass = parameters.bound_mass.to_numpy()[0]
 
         threshold = np.argmax(parameters.bound_mass < 0.01 * max_bound_mass)
-        ax1.plot(parameters.times[:threshold], parameters.distances[:threshold], label=f"${angle}^\circ$", color=color)
+        ax1.plot(
+            parameters.times[:threshold],
+            parameters.distances[:threshold],
+            label=f"${angle}^\circ$",
+            color=color,
+        )
         ax2.plot(
             parameters.times,
             parameters.bound_mass / 1e11,
             label=f"{angle}",
-            color = color,
+            color=color,
         )
 
     _prepare_axes(ax1, ax2)
@@ -125,5 +126,3 @@ def plot(save: bool):
         fig.savefig(RESULTS_DIR.format("result.pdf"), pad_inches=0, bbox_inches="tight")
     else:
         plt.show()
-
-

@@ -45,9 +45,7 @@ def model():
     z_set = np.random.uniform(-BOX[2] / 2, BOX[2] / 2, N) | units.kpc
 
     background_particles = scriptslib.downsample(
-        scriptslib.read_csv(
-            "models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT
-        ),
+        scriptslib.read_csv("models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT),
         N,
     )
 
@@ -64,14 +62,10 @@ def model():
 
     while time < MAX_TIME:
         print(f"{datetime.now().strftime('%H:%M:%S')}\t{time.value_in(units.Myr):.03f}")
-        particles = scriptslib.leapfrog(
-            particles, EPS, DT, SPACE_UNIT, VEL_UNIT, MASS_UNIT, TIME_UNIT
-        )
+        particles = scriptslib.leapfrog(particles, EPS, DT, SPACE_UNIT, VEL_UNIT, MASS_UNIT, TIME_UNIT)
 
         if i % PLOT_ITERATION == 0:
-            dsts = ((particles.position - BH_INIT_POS).value_in(units.kpc) ** 2).sum(
-                axis=1
-            ) ** 0.5
+            dsts = ((particles.position - BH_INIT_POS).value_in(units.kpc) ** 2).sum(axis=1) ** 0.5
             dsts_filter = dsts < 3
             vis_particles = particles[dsts_filter]
             ax.clear()

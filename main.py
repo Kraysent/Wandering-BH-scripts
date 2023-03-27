@@ -1,6 +1,8 @@
 import click
 import matplotlib.pyplot as plt
 
+import bh_orbits.main as bh_orbit
+import bh_orbits.nbody_system_gen as galaxy_generate
 import dynamical_friction_example.main as friction_example
 import models_example.main as example
 import models_resolution.main as resolution
@@ -12,9 +14,7 @@ class CommonCommand(click.core.Command):
         super().__init__(*args, **kwargs)
         self.params.insert(
             0,
-            click.core.Option(
-                ("--style",), help="Style of matplotlib graphs", default="default"
-            ),
+            click.core.Option(("--style",), help="Style of matplotlib graphs", default="default"),
         )
 
 
@@ -95,6 +95,23 @@ def models_velocities(plot, save, style):
         velocities.plot(save)
     else:
         velocities.compute()
+
+
+@cli.command(cls=CommonCommand)
+@click.option(
+    "-g",
+    "--generate",
+    is_flag=True,
+    type=bool,
+    help="Generate N body system; basically, the new galaxy",
+)
+def bh_orbits(generate, style):
+    plt.style.use(style)
+
+    if generate:
+        galaxy_generate.generate_snapshot()
+    else:
+        bh_orbit.compute()
 
 
 @cli.command(cls=CommonCommand)

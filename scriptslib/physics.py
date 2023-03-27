@@ -62,9 +62,7 @@ def bound_subset(
             galaxy.mass.value_in(mass_unit),
             eps.value_in(space_unit),
         )
-        velocities = vector_length(
-            galaxy.velocity - galaxy.center_of_mass_velocity(), vel_unit, axis=1
-        )
+        velocities = vector_length(galaxy.velocity - galaxy.center_of_mass_velocity(), vel_unit, axis=1)
         full_specific_energies = potentials + velocities**2 / 2
 
         galaxy = galaxy[full_specific_energies < 0]
@@ -93,4 +91,16 @@ def bound_mass(
     number_of_iterations: int = 15,
     change_threshold: float = 0.01,
 ) -> float:
-    return bound_subset(galaxy, eps, space_unit, mass_unit, vel_unit, number_of_iterations, change_threshold).total_mass().value_in(mass_unit)
+    return (
+        bound_subset(
+            galaxy,
+            eps,
+            space_unit,
+            mass_unit,
+            vel_unit,
+            number_of_iterations,
+            change_threshold,
+        )
+        .total_mass()
+        .value_in(mass_unit)
+    )

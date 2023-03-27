@@ -9,7 +9,8 @@ from matplotlib.patches import Patch
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
 import scriptslib
-from scriptslib import mnras
+from scriptslib import mnras, physics
+from scriptslib import plot as splot
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -29,9 +30,7 @@ EXTENT = [-100, 100, -100, 100]
 RESOLUTION = 500
 
 
-def _log_scale(
-    array: np.ndarray, low: float = 0, high: float = 1, scale_background: bool = False
-) -> np.ndarray:
+def _log_scale(array: np.ndarray, low: float = 0, high: float = 1, scale_background: bool = False) -> np.ndarray:
     """
     Works only for positive integer arrays!
     Scales array to [low, high] interval with logariphmic scale.
@@ -70,15 +69,11 @@ def model(save: bool, plot: bool):
         plt.show()
 
     host_particles = scriptslib.downsample(
-        scriptslib.read_csv(
-            "models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT
-        ),
+        scriptslib.read_csv("models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT),
         HOST_N,
     )
     sat_particles = scriptslib.downsample(
-        scriptslib.read_csv(
-            "models_resolution/models/sat.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT
-        ),
+        scriptslib.read_csv("models_resolution/models/sat.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT),
         SAT_N,
     )
 
@@ -95,7 +90,7 @@ def model(save: bool, plot: bool):
 
     while time < MAX_TIME:
         print(f"{datetime.now().strftime('%H:%M:%S')}\t{time:.02f}")
-        particles = scriptslib.leapfrog(
+        particles = physics.leapfrog(
             particles,
             EPS,
             DT | TIME_UNIT,
@@ -112,30 +107,19 @@ def model(save: bool, plot: bool):
                 particles[-SAT_N : -int(SAT_N * 0.8)],
             )
 
-            host_hist, _, _ = np.histogram2d(
-                host.x.value_in(SPACE_UNIT),
-                host.y.value_in(SPACE_UNIT),
-                RESOLUTION,
-                [EXTENT[:2], EXTENT[2:]],
+            splot.plot_hist(
+                red_x=host.x.value_in(SPACE_UNIT),
+                red_y=host.y.value_in(SPACE_UNIT),
+                blue_x=sat.x.value_in(SPACE_UNIT),
+                blue_y=sat.y.value_in(SPACE_UNIT),
+                extent=EXTENT,
+                resolution=RESOLUTION,
+                axes=ax,
             )
-            sat_hist, _, _ = np.histogram2d(
-                sat.x.value_in(SPACE_UNIT),
-                sat.y.value_in(SPACE_UNIT),
-                RESOLUTION,
-                [EXTENT[:2], EXTENT[2:]],
-            )
-
-            host_hist = _log_scale(host_hist.T[::-1, :], low=0.4)
-            sat_hist = _log_scale(sat_hist.T[::-1, :], low=0.4)
-
-            rgb_map = np.stack([host_hist, np.zeros(host_hist.shape), sat_hist], axis=2)
-            rgb_map[(rgb_map[:, :] ** 2).sum(axis=2) == 0] = 1
-
-            ax.imshow(rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto")
             ax.set_title(f"{time:.02f} Gyr")
 
             if save:
-                np.save(RESULTS_DIR.format(f"bins/{time:.02f}.npy"), rgb_map)
+                # np.save(RESULTS_DIR.format(f"bins/{time:.02f}.npy"), rgb_map)
                 fig.savefig(RESULTS_DIR.format(f"pdfs/{time:.02f}.pdf"))
             else:
                 fig.canvas.draw()
@@ -165,9 +149,7 @@ def plot_plane(save: bool):
 
     for i, row in enumerate(axes):
         for j, ax in enumerate(row):
-            ax.set_title(
-                f"{times[i, j]:.02f} Gyr", y=1.0, pad=-14, fontsize=mnras.FONT_SIZE
-            )
+            ax.set_title(f"{times[i, j]:.02f} Gyr", y=1.0, pad=-14, fontsize=mnras.FONT_SIZE)
             ax.set_box_aspect(1)
             ax.set_xticklabels([])
             ax.set_yticklabels([])
@@ -201,9 +183,7 @@ def plot_plane(save: bool):
         for j in range(times.shape[1]):
             bin_filename = RESULTS_DIR.format(f"bins/{times[i, j]:.02f}.npy")
             rgb_map = np.load(bin_filename)
-            axes[i, j].imshow(
-                rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto"
-            )
+            axes[i, j].imshow(rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto")
 
     if save:
         plt.savefig(RESULTS_DIR.format("result.pdf"), pad_inches=0, bbox_inches="tight")

@@ -59,9 +59,7 @@ def model(save_trajectories: bool = False, save: bool = False):
     fig.set_size_inches(mnras.size_from_aspect(1))
     fig.subplots_adjust(wspace=0, hspace=0)
 
-    vector_length = (
-        lambda v, unit, axis=0: (v.value_in(unit) ** 2).sum(axis=axis) ** 0.5
-    )
+    vector_length = lambda v, unit, axis=0: (v.value_in(unit) ** 2).sum(axis=axis) ** 0.5
 
     def bound_mass(galaxy: Particles) -> float:
         NUMBER_OF_ITERATIONS = 15
@@ -76,9 +74,7 @@ def model(save_trajectories: bool = False, save: bool = False):
                 galaxy.mass.value_in(MASS_UNIT),
                 EPS.value_in(SPACE_UNIT),
             )
-            velocities = vector_length(
-                galaxy.velocity - galaxy.center_of_mass_velocity(), VEL_UNIT, axis=1
-            )
+            velocities = vector_length(galaxy.velocity - galaxy.center_of_mass_velocity(), VEL_UNIT, axis=1)
             full_specific_energies = potentials + velocities**2 / 2
 
             galaxy = galaxy[full_specific_energies < 0]
@@ -99,15 +95,11 @@ def model(save_trajectories: bool = False, save: bool = False):
 
     for host_sample, sat_sample in samples:
         host_particles = scriptslib.downsample(
-            scriptslib.read_csv(
-                "models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT
-            ),
+            scriptslib.read_csv("models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT),
             host_sample,
         )
         sat_particles = scriptslib.downsample(
-            scriptslib.read_csv(
-                "models_resolution/models/sat.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT
-            ),
+            scriptslib.read_csv("models_resolution/models/sat.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT),
             sat_sample,
         )
 
@@ -134,18 +126,14 @@ def model(save_trajectories: bool = False, save: bool = False):
                 TIME_UNIT,
             )
 
-            parameters.at[i, "distances"] = physics.distance(
-                particles[:host_sample], particles[-sat_sample:]
-            )
+            parameters.at[i, "distances"] = physics.distance(particles[:host_sample], particles[-sat_sample:])
             parameters.at[i, "bound_mass"] = bound_mass(particles[-sat_sample:])
 
             print(
                 f"{datetime.now().strftime('%H:%M')}\t{parameters.times[i]:.02f}\t{parameters.distances[i]:.02f}\t{parameters.bound_mass[i]:.02f}"
             )
 
-        ax1.plot(
-            parameters.times, parameters.distances, label=f"{host_sample + sat_sample}"
-        )
+        ax1.plot(parameters.times, parameters.distances, label=f"{host_sample + sat_sample}")
         ax2.plot(
             parameters.times,
             parameters.bound_mass * 232500 / 1e11,
@@ -153,9 +141,7 @@ def model(save_trajectories: bool = False, save: bool = False):
         )
 
         if save_trajectories:
-            parameters.to_csv(
-                RESULTS_DIR.format(f"{host_sample+sat_sample}.csv"), index=False
-            )
+            parameters.to_csv(RESULTS_DIR.format(f"{host_sample+sat_sample}.csv"), index=False)
 
     _prepare_axes(ax1, ax2)
 
