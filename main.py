@@ -105,13 +105,27 @@ def models_velocities(plot, save, style):
     type=bool,
     help="Generate N body system; basically, the new galaxy",
 )
-def bh_orbits(generate, style):
+@click.option(
+    "-d",
+    "--debug",
+    is_flag=True,
+    type=bool,
+    help="Will generate a picture with trajectories for each model if set; will cost you some perfomance",
+)
+@click.option(
+    "-a",
+    "--additional-results",
+    type=str,
+    default=None,
+    help="JSON with additional results; they would be shown on resulting graph in given format",
+)
+def bh_orbits(generate, debug, additional_results, style):
     plt.style.use(style)
 
     if generate:
         galaxy_generate.generate_snapshot()
     else:
-        bh_orbit.compute()
+        bh_orbit.compute(debug, additional_results)
 
 
 @cli.command(cls=CommonCommand)
