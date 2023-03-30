@@ -56,10 +56,6 @@ def _prepare_axes(ax):
 
 
 def model(save: bool, plot: bool):
-    if plot:
-        plot_plane(save)
-        return
-
     fig, ax = plt.subplots()
     _prepare_axes(ax)
     plt.tight_layout()
@@ -128,6 +124,62 @@ def model(save: bool, plot: bool):
         i += 1
         time += DT
 
+def _prepare_axes_result(ax, time: float):
+    ax.set_title(f"{time:.02f} Gyr", y=1.0, pad=-14, fontsize=mnras.FONT_SIZE)
+    ax.set_box_aspect(1)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+def plot_separate_pic(save: bool):
+    # using ndarray to ensure that this is matrix and not list of lists
+    times = np.array(
+        [
+            0.0, 0.25, 0.5, 0.75,
+            1.0, 1.25, 1.5, 1.75,
+            2.0, 2.25, 2.5, 2.75,
+            3.0,
+        ]
+    )
+
+    for i, time in enumerate(times):
+        fig, ax = plt.subplots()
+        plt.tight_layout()
+        fig.set_size_inches(mnras.size_from_aspect(1))
+
+        _prepare_axes_result(ax, time)
+        ax.legend(
+            handles=[
+                Patch(facecolor="r", edgecolor="r", label="Host"),
+                Patch(facecolor="b", edgecolor="b", label="Satellite"),
+            ],
+            prop={"size": mnras.FONT_SIZE},
+            loc="upper right",
+        )
+
+        scalebar = AnchoredSizeBar(
+            ax.transData,
+            50,
+            "50 kpc",
+            "lower right",
+            pad=0.4,
+            color="black",
+            frameon=False,
+            size_vertical=1,
+            fontproperties=fm.FontProperties(size=mnras.FONT_SIZE),
+        )
+        ax.add_artist(scalebar)
+
+        rgb_map = np.load(RESULTS_DIR.format(f"bins/{time:.02f}.npy"))
+        ax.imshow(rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto")
+
+        if save:
+            fig.savefig(RESULTS_DIR.format(f"{i+1}.pdf"), bbox_inches='tight', pad_inches=0)
+        else:
+            plt.show()
+
+        plt.close(fig)
 
 def plot_plane(save: bool):
     # using ndarray to ensure that this is matrix and not list of lists
@@ -149,12 +201,7 @@ def plot_plane(save: bool):
 
     for i, row in enumerate(axes):
         for j, ax in enumerate(row):
-            ax.set_title(f"{times[i, j]:.02f} Gyr", y=1.0, pad=-14, fontsize=mnras.FONT_SIZE)
-            ax.set_box_aspect(1)
-            ax.set_xticklabels([])
-            ax.set_yticklabels([])
-            ax.set_xticks([])
-            ax.set_yticks([])
+            _prepare_axes_result(ax, times[i, j])
 
     axes[0, 0].legend(
         handles=[

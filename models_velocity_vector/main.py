@@ -1,3 +1,4 @@
+from collections import namedtuple
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -25,6 +26,12 @@ MODELS_DIR = "models_velocity_vector/models/{}"
 
 params = [(0, "r"), (45, "g"), (90, "b")]
 
+settings = namedtuple("settings", ["figaspect", "scale"])
+
+modes_settings = {
+    "paper": settings(1, 1),
+    "presentation": settings(0.6, 1.5)
+}
 
 def compute():
     for angle, _ in params:
@@ -94,10 +101,15 @@ def _prepare_axes(dist_axes, bound_mass_axes):
     bound_mass_axes.set_ylim(0, 2.4)
 
 
-def plot(save: bool):
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.set_size_inches(mnras.size_from_aspect(1))
+def _prepare_figure(fig, mode: settings):
+    fig.set_size_inches(mnras.size_from_aspect(mode.figaspect, scale=mode.scale))
     fig.subplots_adjust(wspace=0, hspace=0)
+
+def plot(save: bool, mode: str):
+    mode = modes_settings[mode]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+    _prepare_figure(fig, mode)
 
     for angle, color in params:
         filename = RESULTS_DIR.format(f"{angle}.csv")

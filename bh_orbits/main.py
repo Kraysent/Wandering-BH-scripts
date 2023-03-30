@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import scipy
 from scriptslib import plot as splot
-from amuse.lab import units, constants
+from scriptslib import mnras
 from matplotlib import figure
 import json
 
@@ -15,8 +15,12 @@ import json
 RESULTS_DIR = "bh_orbits/results/{}"
 MODELS_DIR = "bh_orbits/models/{}"
 
+BH_MASS = 5e8 # MSun
+THRESHOLDS = [2, 5, 10, 20]  # pc
+MAX_TIME = 13.7  # Gyr
+RESOLUTION = 20
 
-def get_df_in_potential(density_func, mass, ln_lambda, sigma):
+def _get_df_in_potential(density_func, mass, ln_lambda, sigma):
     def df(pos, vel):
         """
         Dynamical friction formula in given potential.
@@ -44,7 +48,7 @@ def get_df_in_potential(density_func, mass, ln_lambda, sigma):
     return df
 
 
-def get_ode_in_potential(potential, mass, ln_lambda):
+def _get_ode_in_potential(potential, mass, ln_lambda):
     df_host = agama.DistributionFunction(type="quasispherical", potential=potential)
     grid_r = np.logspace(-1, 2, 16)
     grid_sig = (
@@ -61,57 +65,53 @@ def get_ode_in_potential(potential, mass, ln_lambda):
         ODE to be solved by scipy. xv is a state vector (x, y, z, vx, vy, vz).
         """
 
-        df = get_df_in_potential(potential.density, mass, ln_lambda, sigma)
+        df = _get_df_in_potential(potential.density, mass, ln_lambda, sigma)
 
         return np.concatenate((xv[3:6], potential.force(xv[:3], t=t) + df(xv[:3], xv[3:6])))
 
     return ode
 
 
-def compute(debug: bool = False, additional_results: str | None = None):
-    particles = pd.read_csv(RESULTS_DIR.format("particles.csv"))
+def _get_potential_from_particles(particles: pd.DataFrame) -> agama.Potential:
     pos = particles[["x", "y", "z"]].to_numpy()
     mass = particles["mass"].to_numpy()
+    return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
 
-    ecc_span = np.linspace(0.01, 0.99, 6)
-    sma_span = np.linspace(1, 16, 6)
+def _get_apocentre_velocity(a: float, e: float, potential: agama.Potential):
+    apocentre = a * (1 + e)
+    m = potential.enclosedMass(apocentre)
+    return np.sqrt(agama.G * m / apocentre) * (1 - e)
+
+
+def compute(debug: bool = False, additional_results: str | None = None):
+    agama.setUnits(mass=1, length=1, velocity=1)  # 1 MSun, 1 kpc, 1 kms => time = 0.98 Gyr
+    particles = pd.read_csv(RESULTS_DIR.format("particles.csv"))
+    potential = _get_potential_from_particles(particles)
+
+    ecc_span = np.linspace(0.01, 0.99, RESOLUTION)
+    sma_span = np.linspace(1, 16, RESOLUTION)
     eccs, smas = np.meshgrid(ecc_span, sma_span, indexing="ij")
-    bound_times = {
-        20: np.zeros(shape=eccs.shape),
-        10: np.zeros(shape=eccs.shape),
-        5: np.zeros(shape=eccs.shape),
-        2: np.zeros(shape=eccs.shape),
-    }
+    bound_times = {threshold: np.zeros(shape=eccs.shape) for threshold in THRESHOLDS}
     velocities = np.zeros(shape=eccs.shape)
 
-    agama.setUnits(mass=1, length=1, velocity=1)  # 1 MSun, 1 kpc, 1 kms => time = 0.98 Gyr
-
-    potential = agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
-    ode = get_ode_in_potential(potential, 5e8, 5)
-    times = np.linspace(0, 13.7, 2**10)
-
-    def cum_mass(r: float):
-        return potential.enclosedMass(r)
+    ode = _get_ode_in_potential(potential, BH_MASS, 5)
+    times = np.linspace(0, MAX_TIME, 2**10)
 
     for iy, ix in np.ndindex(smas.shape):
         a, e = smas[iy, ix], eccs[iy, ix]
-        apocentre = a * (1 + e)
-        m = cum_mass(apocentre)
+        velocities[iy, ix] = _get_apocentre_velocity(a, e, potential)
 
-        vel = np.sqrt(agama.G * m / apocentre) * (1 - e)
-        velocities[iy, ix] = vel
-
-        ic = np.array([a, 0, 0, 0, vel, 0])
-
+        ic = np.array([a, 0, 0, 0, velocities[iy, ix], 0])
         traj = scipy.integrate.odeint(ode, ic, times)
+
         rs = (traj[:, 0:3] ** 2).sum(axis=1) ** 0.5
 
-        log = f"{eccs[iy, ix]:.02f},\t{smas[iy, ix]:.02f}:"
+        log = f"({eccs[iy, ix]:.02f}, {smas[iy, ix]:.02f}):"
 
-        for threshold in [2, 5, 10, 20]:
+        for threshold in THRESHOLDS:
             index = np.argmax(rs < 0.001 * threshold)
 
-            bound_times[threshold][iy, ix] = 13.7 if index == 0 else times[index]
+            bound_times[threshold][iy, ix] = MAX_TIME if index == 0 else times[index]
 
             log += f"\t{bound_times[threshold][iy, ix]:.02f}"
 
@@ -123,7 +123,8 @@ def compute(debug: bool = False, additional_results: str | None = None):
             ax1.set_ylim(-150, 150)
             ax2.grid(True)
             ax2.set_ylim(0, 16)
-            splot.plot_hist(red_x=pos[:, 0], red_y=pos[:, 1], extent=[-150, 150, -150, 150], axes=ax1)
+
+            splot.plot_hist(red_x=particles["x"], red_y=particles["y"], extent=[-150, 150, -150, 150], axes=ax1)
             ax1.scatter(traj[:, 0], traj[:, 1], c=times, marker=".", cmap="Greys")
             ax2.plot(times, rs)
 
@@ -131,23 +132,40 @@ def compute(debug: bool = False, additional_results: str | None = None):
             plt.close(fig)
 
     for threshold in [2, 5, 10, 20]:
-        np.savetxt(RESULTS_DIR.format(f"bound_time_{threshold}.csv"), bound_times[threshold], delimiter=",")
+        np.savetxt(RESULTS_DIR.format(f"bound_time_{BH_MASS:.2E}_{threshold}.csv"), bound_times[threshold], delimiter=",")
 
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=figure.figaspect(1) * 3)
+    _plot(bound_times, additional_results)
 
-    for ax, size in ((ax1, 2), (ax2, 5), (ax3, 10), (ax4, 20)):
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 16)
+# no loading functionality yet
+
+def _prepare_axes(ax):
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 16)
+    ax.set_xlabel("Eccentricity", fontsize=mnras.FONT_SIZE)
+    ax.set_ylabel("Semi-major axis, kpc", fontsize=mnras.FONT_SIZE)
+    ax.set_title(f"M = {BH_MASS:.0E} MSun", fontsize=mnras.FONT_SIZE)
+    ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
+
+def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
+    for threshold in [2, 5, 10, 20]:
+        fig, ax = plt.subplots(1, 1)
+        fig.set_size_inches(mnras.size_from_aspect(0.6))
+        _prepare_axes(ax)
         pic = ax.imshow(
-            bound_times[size].T[::-1, :], extent=[0.01, 0.99, 0.01, 16], interpolation="nearest", aspect="auto", cmap="gray"
+            bound_times[threshold].T[::-1, :],
+            extent=[0.01, 0.99, 0.01, 16],
+            interpolation="nearest",
+            aspect="auto",
+            cmap="gray",
         )
-        plt.colorbar(pic)
+        cbar = plt.colorbar(pic)
+        cbar.set_label("Time till BH's complete sinking, Gyr", fontsize=mnras.FONT_SIZE)
+        cbar.ax.tick_params(labelsize=mnras.FONT_SIZE)
 
-    if additional_results is not None:
-        with open(MODELS_DIR.format(additional_results), "r") as j:
-            results = json.loads(j.read())
+        if additional_results is not None:
+            with open(MODELS_DIR.format(additional_results), "r") as j:
+                results = json.loads(j.read())
 
-        for ax in (ax1, ax2, ax3, ax4):
             ecc, sma, colors, markers, fills = (
                 results["eccentricities"],
                 results["majsemiaxes"],
@@ -156,7 +174,7 @@ def compute(debug: bool = False, additional_results: str | None = None):
                 results["fills"],
             )
 
-            for i, _ in enumerate(ecc):
+            for i in range(len(ecc)):
                 ax.scatter(
                     ecc[i],
                     sma[i],
@@ -165,4 +183,6 @@ def compute(debug: bool = False, additional_results: str | None = None):
                     marker=MarkerStyle(markers[i], fillstyle=fills[i]),
                 )
 
-    fig.savefig(RESULTS_DIR.format("result.pdf"))
+        plt.tight_layout()
+        fig.savefig(RESULTS_DIR.format(f"result_{BH_MASS:.2E}_{threshold}.pdf"), bbox_inches='tight', pad_inches=0)
+        plt.close(fig)

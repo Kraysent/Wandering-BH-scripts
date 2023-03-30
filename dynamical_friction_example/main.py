@@ -2,7 +2,7 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-from amuse.lab import Particle, Particles, units
+from amuse.lab import Particle, units
 
 import scriptslib
 
@@ -37,12 +37,6 @@ def _prepare_axis(ax):
 def model():
     fig, ax = plt.subplots()
     plt.tight_layout()
-
-    std_dev = 1  # kms
-    velocity_set = np.random.normal(0, std_dev, (N, 3)) | units.kms
-    x_set = np.random.uniform(-BOX[0] / 2, BOX[0] / 2, N) | units.kpc
-    y_set = np.random.uniform(-BOX[1] / 2, BOX[1] / 2, N) | units.kpc
-    z_set = np.random.uniform(-BOX[2] / 2, BOX[2] / 2, N) | units.kpc
 
     background_particles = scriptslib.downsample(
         scriptslib.read_csv("models_resolution/models/host.csv", SPACE_UNIT, VEL_UNIT, MASS_UNIT),
@@ -86,7 +80,7 @@ def model():
             )
             ax.set_title(f"{time.value_in(units.Myr):.03f} Myr")
 
-            fig.savefig(RESULTS_DIR.format(f"{time.value_in(units.Myr):.03f}.pdf"))
+            fig.savefig(RESULTS_DIR.format(f"{time.value_in(units.Myr):.03f}.pdf"), bbox_inches='tight', pad_inches=0)
 
         i += 1
         time += DT

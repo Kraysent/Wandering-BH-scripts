@@ -16,6 +16,10 @@ class CommonCommand(click.core.Command):
             0,
             click.core.Option(("--style",), help="Style of matplotlib graphs", default="default"),
         )
+        self.params.insert(
+            0,
+            click.core.Option(("--mode",), help="Mode for the objects: paper, presentation", default="paper"),
+        )
 
 
 @click.group()
@@ -45,12 +49,12 @@ def cli():
     type=bool,
     help="Already have trajectories on the files? This option will plot them. Ignores -st option but does not ignore -s one.",
 )
-def models_resolution(save, save_trajectories, cached, style):
+def models_resolution(save, save_trajectories, cached, style, mode, **kwargs):
     plt.style.use(style)
     if not cached:
         resolution.model(save_trajectories, save)
     else:
-        resolution.load(save)
+        resolution.load(save, mode)
 
 
 @cli.command(cls=CommonCommand)
@@ -68,9 +72,21 @@ def models_resolution(save, save_trajectories, cached, style):
     type=bool,
     help="Already have rgb maps saved in results/bins? This option will plot them in a single plane. Does not ignore -s option.",
 )
-def models_example(save, plot, style):
+@click.option(
+    "-sp",
+    "--separate-plot",
+    is_flag=True,
+    type=bool,
+    help="Already have rgb maps saved in results/bins? This option will plot them in a separate planes each. Does not ignore -s option.",
+)
+def models_example(save, plot, separate_plot, style, **kwargs):
     plt.style.use(style)
-    example.model(save, plot)
+    if plot:
+        example.plot_plane(save)
+    elif separate_plot:
+        example.plot_separate_pic(save)
+    else:
+        example.model(save, plot)
 
 
 @cli.command(cls=CommonCommand)
@@ -88,11 +104,11 @@ def models_example(save, plot, style):
     type=bool,
     help="Save to PDF or just show figures?",
 )
-def models_velocities(plot, save, style):
+def models_velocities(plot, save, style, mode, **kwargs):
     plt.style.use(style)
 
     if plot:
-        velocities.plot(save)
+        velocities.plot(save, mode)
     else:
         velocities.compute()
 
@@ -119,7 +135,7 @@ def models_velocities(plot, save, style):
     default=None,
     help="JSON with additional results; they would be shown on resulting graph in given format",
 )
-def bh_orbits(generate, debug, additional_results, style):
+def bh_orbits(generate, debug, additional_results, style, **kwargs):
     plt.style.use(style)
 
     if generate:
@@ -129,7 +145,7 @@ def bh_orbits(generate, debug, additional_results, style):
 
 
 @cli.command(cls=CommonCommand)
-def df_example(style):
+def df_example(style, **kwargs):
     plt.style.use(style)
     friction_example.model()
 

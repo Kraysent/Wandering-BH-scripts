@@ -1,3 +1,4 @@
+from collections import namedtuple
 import glob
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +22,13 @@ DT = 0.5**6
 MAX_TIME = 5.0
 
 RESULTS_DIR = "models_resolution/results/{}"
+
+settings = namedtuple("settings", ["figaspect", "scale"])
+
+modes_settings = {
+    "paper": settings(1, 1),
+    "presentation": settings(0.6, 1.5)
+}
 
 
 def _prepare_axes(dist_axes, bound_mass_axes):
@@ -150,13 +158,17 @@ def model(save_trajectories: bool = False, save: bool = False):
     else:
         plt.show()
 
+def _prepare_figure(fig, mode: settings):
+    fig.set_size_inches(mnras.size_from_aspect(mode.figaspect, mode.scale))
+    fig.subplots_adjust(wspace=0, hspace=0)
 
-def load(save: str | None = None):
+def load(save: bool, mode: str):
+    mode = modes_settings[mode]
+
     filenames = glob.glob(RESULTS_DIR.format("*.csv"))
 
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.set_size_inches(mnras.size_from_aspect(1))
-    fig.subplots_adjust(wspace=0, hspace=0)
+    _prepare_figure(fig, mode)
 
     for filename in filenames:
         print(f"Reading {filename}")
