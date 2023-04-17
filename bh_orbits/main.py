@@ -152,7 +152,7 @@ def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
         fig.set_size_inches(mnras.size_from_aspect(0.6))
         _prepare_axes(ax)
         pic = ax.imshow(
-            bound_times[threshold].T[::-1, :],
+            bound_times[threshold][:, ::-1],
             extent=[0.01, 0.99, 0.01, 16],
             interpolation="nearest",
             aspect="auto",
