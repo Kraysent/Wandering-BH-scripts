@@ -1,3 +1,4 @@
+from matplotlib.image import AxesImage
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -7,8 +8,11 @@ def _log_scale(array: np.ndarray, low: float = 0, high: float = 1, scale_backgro
     Works only for positive integer arrays!
     Scales array to [low, high] interval with logariphmic scale.
     """
+    if array.max() == 0:
+        return array
+
     array[array != 0] = np.log10(array[array != 0])
-    array = low + (high - low) / np.max(array) * array
+    array = low + (high - low) / array.max() * array
 
     if not scale_background:
         array[array == low] = 0
@@ -27,7 +31,8 @@ def plot_hist(
     extent: tuple[float, float, float, float],
     resolution: int = 500,
     axes=None,
-):
+    return_rgbmap: bool = False,
+) -> AxesImage | tuple[AxesImage, np.ndarray]:
     hists = {}
 
     for c, x, y in zip(["r", "g", "b"], [red_x, green_x, blue_x], [red_y, green_y, blue_y]):
@@ -42,5 +47,6 @@ def plot_hist(
     rgb_map = np.stack([hists["r"], hists["g"], hists["b"]], axis=2)
     rgb_map[(rgb_map[:, :] ** 2).sum(axis=2) == 0] = 1
     params = dict(extent=extent, interpolation="nearest", aspect="auto")
+    image = plt.imshow(rgb_map, **params) if axes is None else axes.imshow(rgb_map, **params)
 
-    return plt.imshow(rgb_map, **params) if axes is None else axes.imshow(rgb_map, **params)
+    return (image, rgb_map) if return_rgbmap else image

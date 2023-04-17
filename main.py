@@ -1,5 +1,4 @@
 import click
-import matplotlib.pyplot as plt
 
 import bh_orbits.main as bh_orbit
 import bh_orbits.nbody_system_gen as galaxy_generate
@@ -7,18 +6,14 @@ import dynamical_friction_example.main as friction_example
 import models_example.main as example
 import models_resolution.main as resolution
 import models_velocity_vector.main as velocities
-
+import all_models.main as module_all_models
 
 class CommonCommand(click.core.Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.params.insert(
             0,
-            click.core.Option(("--style",), help="Style of matplotlib graphs", default="default"),
-        )
-        self.params.insert(
-            0,
-            click.core.Option(("--mode",), help="Mode for the objects: paper, presentation", default="paper"),
+            click.core.Option(("--mode",), help="Mode for the objects: [paper, presentation]", default="paper"),
         )
 
 
@@ -49,8 +44,7 @@ def cli():
     type=bool,
     help="Already have trajectories on the files? This option will plot them. Ignores -st option but does not ignore -s one.",
 )
-def models_resolution(save, save_trajectories, cached, style, mode, **kwargs):
-    plt.style.use(style)
+def models_resolution(save, save_trajectories, cached, mode, **kwargs):
     if not cached:
         resolution.model(save_trajectories, save)
     else:
@@ -79,8 +73,7 @@ def models_resolution(save, save_trajectories, cached, style, mode, **kwargs):
     type=bool,
     help="Already have rgb maps saved in results/bins? This option will plot them in a separate planes each. Does not ignore -s option.",
 )
-def models_example(save, plot, separate_plot, style, **kwargs):
-    plt.style.use(style)
+def models_example(save, plot, separate_plot, **kwargs):
     if plot:
         example.plot_plane(save)
     elif separate_plot:
@@ -104,9 +97,7 @@ def models_example(save, plot, separate_plot, style, **kwargs):
     type=bool,
     help="Save to PDF or just show figures?",
 )
-def models_velocities(plot, save, style, mode, **kwargs):
-    plt.style.use(style)
-
+def models_velocities(plot, save, mode, **kwargs):
     if plot:
         velocities.plot(save, mode)
     else:
@@ -135,18 +126,18 @@ def models_velocities(plot, save, style, mode, **kwargs):
     default=None,
     help="JSON with additional results; they would be shown on resulting graph in given format",
 )
-def bh_orbits(generate, debug, additional_results, style, **kwargs):
-    plt.style.use(style)
-
+def bh_orbits(generate, debug, additional_results, **kwargs):
     if generate:
         galaxy_generate.generate_snapshot()
     else:
         bh_orbit.compute(debug, additional_results)
 
+@cli.command(cls=CommonCommand)
+def all_models(**kwargs):
+    module_all_models.model()
 
 @cli.command(cls=CommonCommand)
-def df_example(style, **kwargs):
-    plt.style.use(style)
+def df_example(**kwargs):
     friction_example.model()
 
 

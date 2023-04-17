@@ -65,7 +65,12 @@ def bound_subset(
         velocities = vector_length(galaxy.velocity - galaxy.center_of_mass_velocity(), vel_unit, axis=1)
         full_specific_energies = potentials + velocities**2 / 2
 
-        galaxy = galaxy[full_specific_energies < 0]
+        new_bound_subset = galaxy[full_specific_energies < 0]
+        # if there are no particles in bound subset, return last iteration
+        if len(new_bound_subset) == 0:
+            return galaxy
+
+        galaxy = new_bound_subset
 
         prev_len = curr_len
         curr_len = len(galaxy)

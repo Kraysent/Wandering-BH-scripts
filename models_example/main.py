@@ -19,7 +19,7 @@ TIME_UNIT = units.Gyr
 
 MAX_TIME = 13.7  # Gyr
 DT = 0.5**6  # Gyr
-DT_UPDATE = 0.5**2  # Gyr
+DT_UPDATE = 0.5**3  # Gyr
 EPS = 0.5 | units.kpc
 PLOT_ITERATION = int(DT_UPDATE / DT)
 HOST_N = 400000
@@ -28,20 +28,6 @@ SAT_N = 200000
 RESULTS_DIR = "models_example/results/{}"
 EXTENT = [-100, 100, -100, 100]
 RESOLUTION = 500
-
-
-def _log_scale(array: np.ndarray, low: float = 0, high: float = 1, scale_background: bool = False) -> np.ndarray:
-    """
-    Works only for positive integer arrays!
-    Scales array to [low, high] interval with logariphmic scale.
-    """
-    array[array != 0] = np.log10(array[array != 0])
-    array = low + (high - low) / np.max(array) * array
-
-    if not scale_background:
-        array[array == low] = 0
-
-    return array
 
 
 def _prepare_axes(ax):
@@ -74,7 +60,7 @@ def model(save: bool, plot: bool):
     )
 
     sat_particles.position += [100, 0, 0] | units.kpc
-    sat_particles.velocity += [-180 / 1.41, 180 / 1.41, 0] | units.kms
+    sat_particles.velocity += [0, 180, 0] | units.kms
 
     particles = host_particles
     particles.add_particles(sat_particles)
@@ -98,24 +84,28 @@ def model(save: bool, plot: bool):
 
         if i % PLOT_ITERATION == 0:
             # first 20 percent of each subset is barion matter so plotting only it
-            host, sat = (
+            sat_bound = physics.bound_subset(particles[-SAT_N:], EPS, SPACE_UNIT, MASS_UNIT, VEL_UNIT)
+            host_barion, sat_barion = (
                 particles[: int(0.2 * HOST_N)],
                 particles[-SAT_N : -int(SAT_N * 0.8)],
             )
 
-            splot.plot_hist(
-                red_x=host.x.value_in(SPACE_UNIT),
-                red_y=host.y.value_in(SPACE_UNIT),
-                blue_x=sat.x.value_in(SPACE_UNIT),
-                blue_y=sat.y.value_in(SPACE_UNIT),
+            _, rgb_map = splot.plot_hist(
+                red_x=host_barion.x.value_in(SPACE_UNIT),
+                red_y=host_barion.y.value_in(SPACE_UNIT),
+                blue_x=sat_barion.x.value_in(SPACE_UNIT),
+                blue_y=sat_barion.y.value_in(SPACE_UNIT),
+                green_x=sat_bound.x.value_in(SPACE_UNIT),
+                green_y=sat_bound.y.value_in(SPACE_UNIT),
                 extent=EXTENT,
                 resolution=RESOLUTION,
                 axes=ax,
+                return_rgbmap=True,
             )
             ax.set_title(f"{time:.02f} Gyr")
 
             if save:
-                # np.save(RESULTS_DIR.format(f"bins/{time:.02f}.npy"), rgb_map)
+                np.save(RESULTS_DIR.format(f"bins/{time:.02f}.npy"), rgb_map)
                 fig.savefig(RESULTS_DIR.format(f"pdfs/{time:.02f}.pdf"))
             else:
                 fig.canvas.draw()
@@ -123,6 +113,7 @@ def model(save: bool, plot: bool):
 
         i += 1
         time += DT
+
 
 def _prepare_axes_result(ax, time: float):
     ax.set_title(f"{time:.02f} Gyr", y=1.0, pad=-14, fontsize=mnras.FONT_SIZE)
@@ -132,13 +123,23 @@ def _prepare_axes_result(ax, time: float):
     ax.set_xticks([])
     ax.set_yticks([])
 
+
 def plot_separate_pic(save: bool):
     # using ndarray to ensure that this is matrix and not list of lists
     times = np.array(
         [
-            0.0, 0.25, 0.5, 0.75,
-            1.0, 1.25, 1.5, 1.75,
-            2.0, 2.25, 2.5, 2.75,
+            0.0,
+            0.25,
+            0.5,
+            0.75,
+            1.0,
+            1.25,
+            1.5,
+            1.75,
+            2.0,
+            2.25,
+            2.5,
+            2.75,
             3.0,
         ]
     )
@@ -175,11 +176,12 @@ def plot_separate_pic(save: bool):
         ax.imshow(rgb_map, extent=EXTENT, interpolation="nearest", aspect="auto")
 
         if save:
-            fig.savefig(RESULTS_DIR.format(f"{i+1}.pdf"), bbox_inches='tight', pad_inches=0)
+            fig.savefig(RESULTS_DIR.format(f"{i+1}.pdf"), bbox_inches="tight", pad_inches=0)
         else:
             plt.show()
 
         plt.close(fig)
+
 
 def plot_plane(save: bool):
     # using ndarray to ensure that this is matrix and not list of lists

@@ -139,7 +139,7 @@ def compute(debug: bool = False, additional_results: str | None = None):
 # no loading functionality yet
 
 def _prepare_axes(ax):
-    ax.set_xlim(0, 1)
+    ax.set_xlim(-0.01, 1.01)
     ax.set_ylim(0, 16)
     ax.set_xlabel("Eccentricity", fontsize=mnras.FONT_SIZE)
     ax.set_ylabel("Semi-major axis, kpc", fontsize=mnras.FONT_SIZE)
@@ -165,6 +165,8 @@ def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
         if additional_results is not None:
             with open(MODELS_DIR.format(additional_results), "r") as j:
                 results = json.loads(j.read())
+
+            print(results)
 
             ecc, sma, colors, markers, fills = (
                 results["eccentricities"],

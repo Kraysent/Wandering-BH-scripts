@@ -197,6 +197,8 @@ def fit_3d_ellipse(data: np.ndarray) -> tuple[float, float]:
     """
     takes a set of points in array (N, 3) of 3d points and approximates them with an ellipse by
     projecting them onto a plane and then approximating with 2d ellipse.
+
+    Returns: semi-major axis, eccentricity
     """
     data_2d = project_data_on_2d(data)
     sma, e, _ = fit_2d_ellipse(data_2d)
