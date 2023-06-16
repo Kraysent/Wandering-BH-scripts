@@ -15,10 +15,11 @@ import json
 RESULTS_DIR = "bh_orbits/results/{}"
 MODELS_DIR = "bh_orbits/models/{}"
 
-BH_MASS = 5e8 # MSun
+BH_MASS = 5e8  # MSun
 THRESHOLDS = [2, 5, 10, 20]  # pc
 MAX_TIME = 13.7  # Gyr
 RESOLUTION = 20
+
 
 def _get_df_in_potential(density_func, mass, ln_lambda, sigma):
     def df(pos, vel):
@@ -77,6 +78,7 @@ def _get_potential_from_particles(particles: pd.DataFrame) -> agama.Potential:
     mass = particles["mass"].to_numpy()
     return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
 
+
 def _get_apocentre_velocity(a: float, e: float, potential: agama.Potential):
     apocentre = a * (1 + e)
     m = potential.enclosedMass(apocentre)
@@ -89,7 +91,7 @@ def compute(debug: bool = False, additional_results: str | None = None):
     potential = _get_potential_from_particles(particles)
 
     ecc_span = np.linspace(0.01, 0.99, RESOLUTION)
-    sma_span = np.linspace(1, 16, RESOLUTION)
+    sma_span = np.linspace(1, 22, RESOLUTION)
     eccs, smas = np.meshgrid(ecc_span, sma_span, indexing="ij")
     bound_times = {threshold: np.zeros(shape=eccs.shape) for threshold in THRESHOLDS}
     velocities = np.zeros(shape=eccs.shape)
@@ -122,7 +124,7 @@ def compute(debug: bool = False, additional_results: str | None = None):
             ax1.set_xlim(-150, 150)
             ax1.set_ylim(-150, 150)
             ax2.grid(True)
-            ax2.set_ylim(0, 16)
+            ax2.set_ylim(0, 22)
 
             splot.plot_hist(red_x=particles["x"], red_y=particles["y"], extent=[-150, 150, -150, 150], axes=ax1)
             ax1.scatter(traj[:, 0], traj[:, 1], c=times, marker=".", cmap="Greys")
@@ -131,29 +133,34 @@ def compute(debug: bool = False, additional_results: str | None = None):
             fig.savefig(RESULTS_DIR.format(f"debug/{a:.02f}-{e:.02f}.pdf"))
             plt.close(fig)
 
-    for threshold in [2, 5, 10, 20]:
-        np.savetxt(RESULTS_DIR.format(f"bound_time_{BH_MASS:.2E}_{threshold}.csv"), bound_times[threshold], delimiter=",")
+    for threshold in THRESHOLDS:
+        np.savetxt(
+            RESULTS_DIR.format(f"bound_time_{BH_MASS:.2E}_{threshold}.csv"), bound_times[threshold], delimiter=","
+        )
 
     _plot(bound_times, additional_results)
 
+
 # no loading functionality yet
+
 
 def _prepare_axes(ax):
     ax.set_xlim(-0.01, 1.01)
-    ax.set_ylim(0, 16)
+    ax.set_ylim(0, 22)
     ax.set_xlabel("Eccentricity", fontsize=mnras.FONT_SIZE)
     ax.set_ylabel("Semi-major axis, kpc", fontsize=mnras.FONT_SIZE)
     ax.set_title(f"M = {BH_MASS:.0E} MSun", fontsize=mnras.FONT_SIZE)
     ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
 
+
 def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
-    for threshold in [2, 5, 10, 20]:
+    for threshold in THRESHOLDS:
         fig, ax = plt.subplots(1, 1)
         fig.set_size_inches(mnras.size_from_aspect(0.6))
         _prepare_axes(ax)
         pic = ax.imshow(
             bound_times[threshold][:, ::-1],
-            extent=[0.01, 0.99, 0.01, 16],
+            extent=[0.01, 0.99, 0.01, 22],
             interpolation="nearest",
             aspect="auto",
             cmap="gray",
@@ -186,5 +193,5 @@ def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
                 )
 
         plt.tight_layout()
-        fig.savefig(RESULTS_DIR.format(f"result_{BH_MASS:.2E}_{threshold}.pdf"), bbox_inches='tight', pad_inches=0)
+        fig.savefig(RESULTS_DIR.format(f"result_{BH_MASS:.2E}_{threshold}.pdf"), bbox_inches="tight", pad_inches=0)
         plt.close(fig)

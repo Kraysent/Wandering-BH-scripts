@@ -5,9 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from amuse.lab import units
+from collections import deque
 
 import scriptslib
-from scriptslib import mnras, physics
+from scriptslib import mnras, physics, rotate, ellipse_approx
+import scriptslib.plot as splot
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -19,70 +21,119 @@ DT = 0.5**6
 MAX_TIME = 5.0
 HOST_SAMPLE = 400000
 SAT_SAMPLE = 200000
-VEL_ABS = 180
+VEL_ABS = 180  # kms
+DISTANCE_ABS = 100  # kpc
+INCLINATION = np.deg2rad(30)
+MASS_TRESHOLD = 0.05
+SAT_MASS = 2e11 | units.MSun
+ORBIT_QUEUE_LENGTH = 30
 
 RESULTS_DIR = "models_velocity_vector/results/{}"
 MODELS_DIR = "models_velocity_vector/models/{}"
 
-params = [(0, "r"), (45, "g"), (90, "b")]
+Params = namedtuple("Params", ["speed_angle", "line_clr", "name"])
+Settings = namedtuple("Settings", ["figaspect", "scale"])
 
-settings = namedtuple("settings", ["figaspect", "scale"])
+modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
+# params = [
+#     Params(45, "r", "i30e45"),
+#     Params(50, "r", "i30e50"),
+#     Params(55, "r", "i30e55"),
+#     Params(60, "g", "i30e60"),
+#     Params(65, "r", "i30e65"),
+#     Params(70, "g", "i30e70"),
+#     Params(75, "b", "i30e75"),
+# ]
+params = [Params(45, "r", f"i30e45_{i}") for i in range(60, 70)]
 
-modes_settings = {
-    "paper": settings(1, 1),
-    "presentation": settings(0.6, 1.5)
-}
 
-def compute():
-    for angle, _ in params:
-        angle = np.deg2rad(angle)
-        host_particles = scriptslib.downsample(
-            scriptslib.read_csv(MODELS_DIR.format("host.csv"), SPACE_UNIT, VEL_UNIT, MASS_UNIT),
-            HOST_SAMPLE,
-        )
-        sat_particles = scriptslib.downsample(
-            scriptslib.read_csv(MODELS_DIR.format("sat.csv"), SPACE_UNIT, VEL_UNIT, MASS_UNIT),
-            SAT_SAMPLE,
-        )
-        sat_particles.position += [100, 0, 0] | units.kpc
-        sat_particles.velocity += [
-            -np.cos(angle) * VEL_ABS,
-            np.sin(angle) * VEL_ABS,
-            0,
-        ] | VEL_UNIT
+def prepare_model(params: Params):
+    """
+    Setup: host is initially located in the origin without any rotation, satellite is located
+    on distance `DISTANCE_ABS` with inclination `INCLINATION` in such way that its centre has
+    only X and Z components, but no Y.
 
-        particles = host_particles
-        particles.add_particles(sat_particles)
+    The satellite is rotated around Y axis on angle `INCLINATION` so its plane includes the line
+    from host to itself centres.
+    """
+    host_particles = scriptslib.downsample(scriptslib.read_csv(MODELS_DIR.format("host.csv")), HOST_SAMPLE)
+    sat_particles = scriptslib.downsample(scriptslib.read_csv(MODELS_DIR.format("sat.csv")), SAT_SAMPLE)
+    angle = np.deg2rad(params.speed_angle)
+    print("Read models")
 
-        parameters = pd.DataFrame()
-        parameters["times"] = np.arange(0, MAX_TIME, DT)
-        parameters["distances"] = [0] * len(parameters)
-        parameters["bound_mass"] = [0] * len(parameters)
+    rotate(sat_particles, "y", INCLINATION)
+    print("Rotated models")
 
-        for i in parameters.index:
-            particles = physics.leapfrog(
-                particles,
-                EPS,
-                DT | TIME_UNIT,
-                SPACE_UNIT,
-                VEL_UNIT,
-                MASS_UNIT,
-                TIME_UNIT,
-            )
+    sat_particles.position += [DISTANCE_ABS * np.cos(INCLINATION), 0, DISTANCE_ABS * np.sin(INCLINATION)] | units.kpc
+    sat_particles.velocity += [
+        -VEL_ABS * np.cos(angle) * np.cos(INCLINATION),
+        VEL_ABS * np.sin(angle),
+        -VEL_ABS * np.cos(angle) * np.sin(INCLINATION),
+    ] | VEL_UNIT
+    particles = host_particles
+    particles.add_particles(sat_particles)
 
-            bound_subset = physics.bound_subset(particles[-SAT_SAMPLE:], EPS, SPACE_UNIT, MASS_UNIT, VEL_UNIT)
-            parameters.at[i, "distances"] = physics.distance(
-                particles[:HOST_SAMPLE],
-                bound_subset,
-                SPACE_UNIT,
-            )
-            parameters.at[i, "bound_mass"] = bound_subset.total_mass().value_in(units.MSun)
+    particles.position -= particles.center_of_mass()
+    particles.velocity -= particles.center_of_mass_velocity()
 
-            print(
-                f"{datetime.now().strftime('%H:%M')}\t{parameters.times[i]:.02f}\t{parameters.distances[i]:.02f}\t{parameters.bound_mass[i]:.02f}"
-            )
+    particles.id = np.arange(0, len(particles))
 
-        parameters.to_csv(RESULTS_DIR.format(f"{np.rad2deg(angle):.00f}.csv"), index=False)
+    return particles
+
+
+def compute(debug: bool = False):
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    plt.tight_layout()
+    fig.set_size_inches(mnras.size_from_aspect(1 / 2))
+    fig.subplots_adjust(wspace=0, hspace=0)
+
+    for param in params:
+        particles = prepare_model(param)
+        history = deque()
+
+        print(f"Started simulation {param}")
+        times = np.arange(0, MAX_TIME, DT)
+
+        for i, time in enumerate(times):
+            particles = physics.leapfrog(particles, EPS, DT | TIME_UNIT)
+            history.append(particles.copy())
+
+            if len(history) > ORBIT_QUEUE_LENGTH:
+                history.popleft()
+
+            bound_subset = physics.bound_subset(particles[-SAT_SAMPLE:], EPS)
+            print(f"{datetime.now().strftime('%H:%M:%S')}\t{time:.03f}\t{bound_subset.total_mass() / SAT_MASS:.03f}")
+
+            if bound_subset.total_mass() / SAT_MASS <= MASS_TRESHOLD:
+                indexes = bound_subset.id
+                positions = np.zeros((ORBIT_QUEUE_LENGTH, 3))
+
+                for s_index, snapshot in enumerate(history):
+                    positions[s_index, :] = snapshot[indexes].center_of_mass().value_in(units.kpc)
+
+                semimajor_axis, eccentricity = ellipse_approx.fit_3d_ellipse(positions)
+
+                with open(RESULTS_DIR.format(f"{param.name}.csv"), "w") as file:
+                    file.writelines([f"{semimajor_axis},{eccentricity}"])
+
+                break
+
+            if debug and (i % 10 == 0):
+                splot.plot_hist(
+                    particles.x.value_in(units.kpc),
+                    particles.y.value_in(units.kpc),
+                    extent=[-100, 100, -100, 100],
+                    axes=ax1,
+                )
+                splot.plot_hist(
+                    particles.z.value_in(units.kpc),
+                    particles.y.value_in(units.kpc),
+                    extent=[-100, 100, -100, 100],
+                    axes=ax2,
+                )
+                plt.savefig(RESULTS_DIR.format(f"debug/{i}.png"))
+                ax1.clear()
+                ax2.clear()
 
 
 def _prepare_axes(dist_axes, bound_mass_axes):
@@ -93,7 +144,7 @@ def _prepare_axes(dist_axes, bound_mass_axes):
 
     dist_axes.legend(prop={"size": mnras.FONT_SIZE})
     dist_axes.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
-    dist_axes.set_ylim(0, 130)
+    dist_axes.set_ylim(0, 160)
 
     bound_mass_axes.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
     bound_mass_axes.set_ylabel("Bound mass, $10^{11}$ MSun", fontsize=mnras.FONT_SIZE)
@@ -101,9 +152,10 @@ def _prepare_axes(dist_axes, bound_mass_axes):
     bound_mass_axes.set_ylim(0, 2.4)
 
 
-def _prepare_figure(fig, mode: settings):
+def _prepare_figure(fig, mode: Settings):
     fig.set_size_inches(mnras.size_from_aspect(mode.figaspect, scale=mode.scale))
     fig.subplots_adjust(wspace=0, hspace=0)
+
 
 def plot(save: bool, mode: str):
     mode = modes_settings[mode]
@@ -111,25 +163,26 @@ def plot(save: bool, mode: str):
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
     _prepare_figure(fig, mode)
 
-    for angle, color in params:
-        filename = RESULTS_DIR.format(f"{angle}.csv")
+    for param in params:
+        filename = RESULTS_DIR.format(f"{param.name}.csv")
         print(f"Reading {filename}")
         parameters = pd.read_csv(filename, index_col=None)
         parameters.bound_mass = parameters.bound_mass
+        distances = (parameters.x**2 + parameters.y**2 + parameters.z**2) ** 0.5
         max_bound_mass = parameters.bound_mass.to_numpy()[0]
 
         threshold = np.argmax(parameters.bound_mass < 0.01 * max_bound_mass)
         ax1.plot(
             parameters.times[:threshold],
-            parameters.distances[:threshold],
-            label=f"${angle}^\circ$",
-            color=color,
+            distances[:threshold],
+            label=f"{param.name}",
+            color=param.line_clr,
         )
         ax2.plot(
             parameters.times,
             parameters.bound_mass / 1e11,
-            label=f"{angle}",
-            color=color,
+            label=f"{param.name}",
+            color=param.line_clr,
         )
 
     _prepare_axes(ax1, ax2)

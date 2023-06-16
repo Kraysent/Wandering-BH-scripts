@@ -7,6 +7,7 @@ import models_example.main as example
 import models_resolution.main as resolution
 import models_velocity_vector.main as velocities
 import all_models.main as module_all_models
+import bh_orbit_visualizer
 
 class CommonCommand(click.core.Command):
     def __init__(self, *args, **kwargs):
@@ -131,6 +132,20 @@ def bh_orbits(generate, debug, additional_results, **kwargs):
         galaxy_generate.generate_snapshot()
     else:
         bh_orbit.compute(debug, additional_results)
+
+@cli.command(cls=CommonCommand, name="bh-orbits-visualizer")
+@click.option(
+    "-g",
+    "--generate",
+    is_flag=True,
+    type=bool,
+    help="Generate snapshot and save in into results directory",
+)
+def cmd_bh_orbits_visualizer(generate, **kwargs):
+    if generate:
+        bh_orbit_visualizer.generate_snapshot()
+    else:
+        bh_orbit_visualizer.show()
 
 @cli.command(cls=CommonCommand)
 def all_models(**kwargs):
