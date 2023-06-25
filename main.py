@@ -2,7 +2,6 @@ import click
 
 import bh_orbits.main as bh_orbit
 import bh_orbits.nbody_system_gen as galaxy_generate
-import dynamical_friction_example.main as friction_example
 import models_example.main as example
 import models_resolution.main as resolution
 import models_velocity_vector.main as velocities
@@ -150,10 +149,6 @@ def cmd_bh_orbits_visualizer(generate, **kwargs):
 @cli.command(cls=CommonCommand)
 def all_models(**kwargs):
     module_all_models.model()
-
-@cli.command(cls=CommonCommand)
-def df_example(**kwargs):
-    friction_example.model()
 
 
 if __name__ == "__main__":
