@@ -1,6 +1,7 @@
 from matplotlib.image import AxesImage
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import colors as mpl_colors
 
 
 def _log_scale(array: np.ndarray, low: float = 0, high: float = 1, scale_background: bool = False) -> np.ndarray:
@@ -50,3 +51,20 @@ def plot_hist(
     image = plt.imshow(rgb_map, **params) if axes is None else axes.imshow(rgb_map, **params)
 
     return (image, rgb_map) if return_rgbmap else image
+
+
+def plot_colored_hist(maps: list[np.ndarray], colors: list[str]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    assert len(maps) == len(colors)
+
+    colors = [mpl_colors.to_rgb(c) for c in colors]
+    total_map = sum(maps)
+
+    r_map = sum(maps[i] * colors[i][0] * (1 - maps[i] / maps[i].max()) for i in range(len(maps))) / total_map
+    g_map = sum(maps[i] * colors[i][1] * (1 - maps[i] / maps[i].max()) for i in range(len(maps))) / total_map
+    b_map = sum(maps[i] * colors[i][2] * (1 - maps[i] / maps[i].max()) for i in range(len(maps))) / total_map
+
+    r_map[total_map == 0] = 1
+    g_map[total_map == 0] = 1
+    b_map[total_map == 0] = 1
+
+    return r_map, g_map, b_map

@@ -1,6 +1,6 @@
 import numpy as np
 import pyfalcon
-from amuse.lab import Particles, ScalarQuantity, units, VectorQuantity
+from amuse.lab import Particles, ScalarQuantity, VectorQuantity
 from amuse.units import core
 from scriptslib import Units, default_units
 

@@ -1,12 +1,11 @@
 import click
 
-import bh_orbits.main as bh_orbit
-import bh_orbits.nbody_system_gen as galaxy_generate
+from bh_orbits import eccentricity_example
 import models_example.main as example
 import models_resolution.main as resolution
 import models_velocity_vector.main as velocities
 import all_models.main as module_all_models
-import bh_orbit_visualizer
+
 
 class CommonCommand(click.core.Command):
     def __init__(self, *args, **kwargs):
@@ -104,47 +103,10 @@ def models_velocities(plot, save, mode, **kwargs):
         velocities.compute()
 
 
-@cli.command(cls=CommonCommand)
-@click.option(
-    "-g",
-    "--generate",
-    is_flag=True,
-    type=bool,
-    help="Generate N body system; basically, the new galaxy",
-)
-@click.option(
-    "-d",
-    "--debug",
-    is_flag=True,
-    type=bool,
-    help="Will generate a picture with trajectories for each model if set; will cost you some perfomance",
-)
-@click.option(
-    "-a",
-    "--additional-results",
-    type=str,
-    default=None,
-    help="JSON with additional results; they would be shown on resulting graph in given format",
-)
-def bh_orbits(generate, debug, additional_results, **kwargs):
-    if generate:
-        galaxy_generate.generate_snapshot()
-    else:
-        bh_orbit.compute(debug, additional_results)
+@cli.command(cls=CommonCommand, name="bh-orbits-example")
+def bh_orbits_example(**kwargs):
+    eccentricity_example.model()
 
-@cli.command(cls=CommonCommand, name="bh-orbits-visualizer")
-@click.option(
-    "-g",
-    "--generate",
-    is_flag=True,
-    type=bool,
-    help="Generate snapshot and save in into results directory",
-)
-def cmd_bh_orbits_visualizer(generate, **kwargs):
-    if generate:
-        bh_orbit_visualizer.generate_snapshot()
-    else:
-        bh_orbit_visualizer.show()
 
 @cli.command(cls=CommonCommand)
 def all_models(**kwargs):
