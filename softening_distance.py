@@ -1,3 +1,4 @@
+from concurrent import futures
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -6,6 +7,7 @@ from matplotlib.axes import Axes
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from amuse.lab import units
 from matplotlib import pyplot as plt
+import multiprocessing
 
 import scriptslib
 from scriptslib import physics, particles as sparticles
@@ -24,13 +26,21 @@ class Parameters:
 
     def __str__(self):
         if self.name != "":
-            return f"{self.name}-{self.eps_pc:.02f}-{self.number_of_particles:.02f}"
+            return f"{self.name}-{self.eps_pc:.02f}-{self.number_of_particles:.00f}"
         else:
-            return f"{self.eps_pc:.02f}-{self.number_of_particles:.02f}"
+            return f"{self.eps_pc:.02f}-{self.number_of_particles:.00f}"
 
 
 params = [
     Parameters(1000, 500000, "host"),
+    Parameters(900, 500000, "host"),
+    Parameters(800, 500000, "host"),
+    Parameters(700, 500000, "host"),
+    Parameters(600, 500000, "host"),
+    Parameters(400, 500000, "host"),
+    Parameters(300, 500000, "host"),
+    Parameters(200, 500000, "host"),
+    Parameters(100, 500000, "host"),
 ]
 
 
@@ -47,10 +57,7 @@ def process(param: Parameters):
     times = []
 
     while time < MAX_TIME:
-        print(f"{param.name}\t{i}\t{datetime.now().strftime('%H:%M:%S')}\t{time.value_in(units.Gyr):.03f}")
         particles = physics.leapfrog(particles, param.eps_pc | units.pc, DT)
-
-        time += DT
 
         if i % 200 == 0:
             radii, densities = system_generator.get_density_distribution(
@@ -64,6 +71,9 @@ def process(param: Parameters):
             times.append(time)
 
         i += 1
+        time += DT
+
+        yield time
 
     fig, ax1 = plt.subplots()
     ax2: Axes = inset_axes(ax1, width="60%", height="70%", loc="upper right", borderpad=1.2)
@@ -84,9 +94,19 @@ def process(param: Parameters):
     ax2.grid(True)
     fig.savefig(RESULT_DIR.format(f"{str(param)}.pdf"))
 
+    yield None
+
+
+def process_with_log(param: Parameters):
+    for i, time in enumerate(process(param)):
+        if time is None:
+            break
+
+        print(f"{param.name}\t{i}\t{datetime.now().strftime('%H:%M:%S')}\t{time.value_in(units.Gyr):.03f}")
+
 
 if __name__ == "__main__":
     agama.setUnits(mass=1, length=1, velocity=1)  # 1 MSun, 1 kpc, 1 kms => time = 0.98 Gyr
 
-    for param in params:
-        process(param)
+    with futures.ProcessPoolExecutor(max_workers=9) as executor:
+        executor.map(process_with_log, params)
