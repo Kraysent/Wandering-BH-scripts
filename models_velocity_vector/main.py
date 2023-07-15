@@ -1,15 +1,14 @@
-from collections import namedtuple
+from collections import deque, namedtuple
 from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from amuse.lab import units
-from collections import deque
 
 import scriptslib
-from scriptslib import mnras, physics, rotate, ellipse_approx
 import scriptslib.plot as splot
+from scriptslib import ellipse_approx, mnras, physics, rotate
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
@@ -35,16 +34,15 @@ Params = namedtuple("Params", ["speed_angle", "line_clr", "name"])
 Settings = namedtuple("Settings", ["figaspect", "scale"])
 
 modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
-# params = [
-#     Params(45, "r", "i30e45"),
-#     Params(50, "r", "i30e50"),
-#     Params(55, "r", "i30e55"),
-#     Params(60, "g", "i30e60"),
-#     Params(65, "r", "i30e65"),
-#     Params(70, "g", "i30e70"),
-#     Params(75, "b", "i30e75"),
-# ]
-params = [Params(45, "r", f"i30e45_{i}") for i in range(60, 70)]
+
+rng = range(180, 210)
+params = (
+    # [Params(35, "r", f"i30e35_{i}") for i in rng]
+    [Params(40, "r", f"i30e40_{i}") for i in rng]
+    # + [Params(45, "r", f"i30e45_{i}") for i in rng]
+    + [Params(50, "r", f"i30e50_{i}") for i in rng]
+    # + [Params(55, "r", f"i30e55_{i}") for i in rng]
+)
 
 
 def prepare_model(params: Params):
@@ -64,7 +62,11 @@ def prepare_model(params: Params):
     rotate(sat_particles, "y", INCLINATION)
     print("Rotated models")
 
-    sat_particles.position += [DISTANCE_ABS * np.cos(INCLINATION), 0, DISTANCE_ABS * np.sin(INCLINATION)] | units.kpc
+    sat_particles.position += [
+        DISTANCE_ABS * np.cos(INCLINATION),
+        0,
+        DISTANCE_ABS * np.sin(INCLINATION),
+    ] | units.kpc
     sat_particles.velocity += [
         -VEL_ABS * np.cos(angle) * np.cos(INCLINATION),
         VEL_ABS * np.sin(angle),
@@ -112,6 +114,10 @@ def compute(debug: bool = False):
                     positions[s_index, :] = snapshot[indexes].center_of_mass().value_in(units.kpc)
 
                 semimajor_axis, eccentricity = ellipse_approx.fit_3d_ellipse(positions)
+                # ax = plt.figure().add_subplot(projection="3d")
+                # ax.plot(positions[:, 0], positions[:, 1], positions[:, 2])
+                # ax.set_xlabel(f"{semimajor_axis:.04f}\t{eccentricity:.04f}")
+                # plt.show()
 
                 with open(RESULTS_DIR.format(f"{param.name}.csv"), "w") as file:
                     file.writelines([f"{semimajor_axis},{eccentricity}"])

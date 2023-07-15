@@ -1,11 +1,12 @@
-from dataclasses import dataclass
-from matplotlib import patches as mpatches
-import matplotlib.pyplot as plt
-from scriptslib import plot as splot
 import glob
+from dataclasses import dataclass
+
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import patches as mpatches
 
 from scriptslib import mnras
+from scriptslib import plot as splot
 
 INPUT_DIR = "bh_orbit_visualizer/input/{}"
 EXTENT = [0, 1, 0, 30]

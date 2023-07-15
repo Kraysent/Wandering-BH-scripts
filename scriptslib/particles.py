@@ -1,9 +1,9 @@
 import functools
 from typing import Callable
+
+import numpy as np
 from amuse.lab import Particles, VectorQuantity
 from scipy.spatial.transform import Rotation
-import numpy as np
-
 
 ParticlesFunc = Callable[[Particles], Particles]
 

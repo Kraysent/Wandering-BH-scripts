@@ -1,10 +1,10 @@
 import click
 
-from bh_orbits import eccentricity_example
+import all_models.main as module_all_models
 import models_example.main as example
 import models_resolution.main as resolution
 import models_velocity_vector.main as velocities
-import all_models.main as module_all_models
+from bh_orbits import eccentricity_example
 
 
 class CommonCommand(click.core.Command):

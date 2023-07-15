@@ -1,11 +1,15 @@
+from datetime import datetime
+
 import agama
 import matplotlib.pyplot as plt
-from datetime import datetime
-from amuse.lab import units, Particles, VectorQuantity, ScalarQuantity
 import numpy as np
+from amuse.lab import Particles, ScalarQuantity, VectorQuantity, units
+
 import scriptslib
-from scriptslib import physics, plot as splot, particles as sparticles
 from scriptslib import math
+from scriptslib import particles as sparticles
+from scriptslib import physics
+from scriptslib import plot as splot
 from scriptslib.log import log
 
 MODELS_DIR = "system_generator/models/{}"
@@ -83,7 +87,7 @@ def generate_snapshot():
         if i % 100 == 0:
             radii, densities = get_density_distribution(
                 particles,
-                particles[:HOST_N].center_of_mass(),
+                physics.median_iterative_center(particles, 8, 5 | units.kpc),
                 cutoff_radius=50 | units.kpc,
             )
 
@@ -113,6 +117,8 @@ def generate_snapshot():
 
         i += 1
 
+    center = physics.median_iterative_center(particles, 8, 5 | units.kpc)
+    particles.position -= center
     scriptslib.write_csv(particles, MODELS_DIR.format("particles.csv"))
 
 

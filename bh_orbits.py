@@ -1,21 +1,20 @@
-import os
-import sys
-import agama
-from matplotlib.markers import MarkerStyle
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import scipy
-from scriptslib import mnras, plot as splot
-from scriptslib.log import log as slog
-from matplotlib import figure
 import json
 
+import agama
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy
+from matplotlib import figure
+from matplotlib.markers import MarkerStyle
+
+import scriptslib
+from scriptslib import mnras
+from scriptslib.log import log as slog
 
 RESULTS_DIR = "bh_orbits/results/{}"
 MODELS_DIR = "bh_orbits/models/{}"
 
-BH_MASS = 1e6  # MSun
+BH_MASS = 1e8  # MSun
 THRESHOLDS = [2, 5, 10, 20]  # pc
 SMA_MAX = 30
 MAX_TIME = 13.7  # Gyr
@@ -64,20 +63,6 @@ def _get_ode_in_potential(potential, mass, ln_lambda):
     return ode
 
 
-def _get_potential_from_particles() -> agama.Potential:
-    particles = pd.read_csv(MODELS_DIR.format("particles.csv"), sep=" ")
-    pos = particles[["x", "y", "z"]].to_numpy()
-    mass = particles["m"].to_numpy() * 232500
-    return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
-
-
-def _get_potential_from_agama() -> agama.Potential:
-    pot_host_params = dict(type="spheroid", gamma=1, beta=3, scaleradius=4.2, densitynorm=1)
-    vcirc1 = (-agama.Potential(pot_host_params).force(10, 0, 0)[0] * 10) ** 0.5
-    pot_host_params["densitynorm"] = (200.0 / vcirc1) ** 2
-    return agama.Potential(pot_host_params)
-
-
 def _get_apocentre_velocity(a: float, e: float, potential: agama.Potential):
     apocentre = a * (1 + e)
     m = potential.enclosedMass(apocentre)
@@ -86,8 +71,8 @@ def _get_apocentre_velocity(a: float, e: float, potential: agama.Potential):
 
 def compute(debug: bool = False, additional_results: str | None = None):
     agama.setUnits(mass=1, length=1, velocity=1)  # 1 MSun, 1 kpc, 1 kms => time = 0.98 Gyr
-    # potential = _get_potential_from_particles()
-    potential = _get_potential_from_agama()
+    particles = scriptslib.read_csv("system_generator/models/particles.csv")
+    potential = scriptslib.potential_from_particles(particles)
 
     ecc_span = np.linspace(0.01, 0.99, RESOLUTION)
     sma_span = np.linspace(1, SMA_MAX, RESOLUTION)
@@ -161,6 +146,8 @@ def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
             interpolation="nearest",
             aspect="auto",
             cmap="gray",
+            vmin=0,
+            vmax=13.7,
         )
         cbar = plt.colorbar(pic)
         cbar.set_label("Time till BH's complete sinking, Gyr", fontsize=mnras.FONT_SIZE)

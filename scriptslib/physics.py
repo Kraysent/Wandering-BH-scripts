@@ -1,8 +1,9 @@
 import numpy as np
 import pyfalcon
-from amuse.lab import Particles, ScalarQuantity, VectorQuantity
+from amuse.lab import Particles, ScalarQuantity, VectorQuantity, units
 from amuse.units import core
-from scriptslib import Units, default_units
+
+from scriptslib import Units, default_units, math
 
 
 def leapfrog(
@@ -105,6 +106,29 @@ def potential_centre_velocity(
     masses = masses[: int(len(masses) * top_fraction)]
 
     return np.sum(velocities * masses[:, np.newaxis], axis=0) / np.sum(masses)
+
+
+def median_iterative_center(
+    particles: Particles,
+    number_of_iterations: int,
+    cutoff_radius: ScalarQuantity,
+) -> VectorQuantity:
+    """
+    One should note that this center computation only works as expected for the set of particles
+    of roughly similar mass. If you have a host and satellite that have same number of particles
+    but wildly different mass it would produce just the center of mass and nothing else.
+    """
+    median_subset = particles
+
+    for _ in range(number_of_iterations):
+        median_pos = math.weighted_median(
+            median_subset.position.value_in(units.kpc),
+            weights=median_subset.mass.value_in(units.MSun),
+        )
+        median_pos = median_pos | units.kpc
+        median_subset = particles.select(lambda pos: (pos - median_pos).lengths() < cutoff_radius, ["position"])
+
+    return median_subset.position.median(axis=0)
 
 
 def bound_subset(

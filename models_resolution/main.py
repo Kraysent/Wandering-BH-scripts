@@ -1,5 +1,5 @@
-from collections import namedtuple
 import glob
+from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
 

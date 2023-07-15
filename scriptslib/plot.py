@@ -1,7 +1,7 @@
-from matplotlib.image import AxesImage
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mpl_colors
+from matplotlib.image import AxesImage
 
 
 def _log_scale(array: np.ndarray, low: float = 0, high: float = 1, scale_background: bool = False) -> np.ndarray:

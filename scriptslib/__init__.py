@@ -1,10 +1,12 @@
 from collections import namedtuple
 from dataclasses import dataclass
+
+import agama
 import numpy as np
 import pandas as pd
-from amuse.lab import Particles, units as aunits
+from amuse.lab import Particles
+from amuse.lab import units as aunits
 from amuse.units import core
-
 from scipy.spatial.transform import Rotation
 
 
@@ -18,6 +20,11 @@ class Units:
 
 default_units = Units(space=aunits.kpc, vel=aunits.kms, mass=232500 * aunits.MSun, time=aunits.Gyr)
 
+
+def potential_from_particles(particles: Particles) -> agama.Potential:
+    pos = particles.position.value_in(aunits.kpc)
+    mass = particles.mass.value_in(aunits.MSun)
+    return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
 
 def read_csv(
     path: str,

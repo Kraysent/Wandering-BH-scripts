@@ -1,16 +1,15 @@
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable
 
-from amuse.lab import units, Particles
-from collections import deque
-import pandas as pd
-
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from amuse.lab import Particles, units
 
 import scriptslib
-import matplotlib.pyplot as plt
-from scriptslib import physics, ellipse_approx
+from scriptslib import ellipse_approx, physics
 
 SPACE_UNIT = units.kpc
 VEL_UNIT = units.kms
