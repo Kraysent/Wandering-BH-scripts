@@ -26,6 +26,7 @@ def potential_from_particles(particles: Particles) -> agama.Potential:
     mass = particles.mass.value_in(aunits.MSun)
     return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
 
+
 def read_csv(
     path: str,
     space_unit: core.named_unit | None = None,

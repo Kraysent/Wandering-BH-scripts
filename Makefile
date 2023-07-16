@@ -1,7 +1,7 @@
 .PHONY: style
 
 style:
-	black .
+	black --line-length 120 .
 	isort .
 
 resolution-compute:

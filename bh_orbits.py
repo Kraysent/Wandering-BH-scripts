@@ -44,7 +44,10 @@ def _get_ode_in_potential(potential, mass, ln_lambda):
     grid_r = np.logspace(-1, 2, 16)
     grid_sig = (
         agama.GalaxyModel(potential, df_host).moments(
-            np.column_stack((grid_r, grid_r * 0, grid_r * 0)), dens=False, vel=False, vel2=True
+            np.column_stack((grid_r, grid_r * 0, grid_r * 0)),
+            dens=False,
+            vel=False,
+            vel2=True,
         )[:, 0]
         ** 0.5
     )
@@ -117,7 +120,9 @@ def compute(debug: bool = False, additional_results: str | None = None):
 
     for threshold in THRESHOLDS:
         np.savetxt(
-            RESULTS_DIR.format(f"bound_time_{BH_MASS:.2E}_{threshold}.csv"), bound_times[threshold], delimiter=","
+            RESULTS_DIR.format(f"bound_time_{BH_MASS:.2E}_{threshold}.csv"),
+            bound_times[threshold],
+            delimiter=",",
         )
 
     _plot(bound_times, additional_results)
@@ -177,7 +182,11 @@ def _plot(bound_times: dict[float, np.ndarray], additional_results: str | None):
                 )
 
         plt.tight_layout()
-        fig.savefig(RESULTS_DIR.format(f"result_{BH_MASS:.2E}_{threshold}.pdf"), bbox_inches="tight", pad_inches=0)
+        fig.savefig(
+            RESULTS_DIR.format(f"result_{BH_MASS:.2E}_{threshold}.pdf"),
+            bbox_inches="tight",
+            pad_inches=0,
+        )
         plt.close(fig)
 
 

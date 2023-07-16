@@ -3,15 +3,15 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import agama
-from matplotlib.axes import Axes
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from amuse.lab import units
 from matplotlib import pyplot as plt
-import multiprocessing
+from matplotlib.axes import Axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import scriptslib
-from scriptslib import physics, particles as sparticles
 import system_generator
+from scriptslib import particles as sparticles
+from scriptslib import physics
 
 RESULT_DIR = "softening_distance/output/{}"
 DT = 0.5**7 | units.Gyr
@@ -80,7 +80,11 @@ def process(param: Parameters):
 
     for radii, densities, time in zip(radii_history, densities_history, times):
         ax2.plot(radii, densities, label=f"{time.value_in(units.Gyr):.03f} Gyr")
-        ax1.plot(radii, densities_history[0] - densities, label=f"{time.value_in(units.Gyr):.03f} Gyr")
+        ax1.plot(
+            radii,
+            densities_history[0] - densities,
+            label=f"{time.value_in(units.Gyr):.03f} Gyr",
+        )
 
     ax2.legend()
     fig.suptitle(f"eps: {param.eps_pc} pc | N: {param.number_of_particles}")

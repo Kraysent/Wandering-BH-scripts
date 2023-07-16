@@ -25,10 +25,7 @@ RESULTS_DIR = "models_resolution/results/{}"
 
 settings = namedtuple("settings", ["figaspect", "scale"])
 
-modes_settings = {
-    "paper": settings(1, 1),
-    "presentation": settings(0.6, 1.5)
-}
+modes_settings = {"paper": settings(1, 1), "presentation": settings(0.6, 1.5)}
 
 
 def _prepare_axes(dist_axes, bound_mass_axes):
@@ -158,9 +155,11 @@ def model(save_trajectories: bool = False, save: bool = False):
     else:
         plt.show()
 
+
 def _prepare_figure(fig, mode: settings):
     fig.set_size_inches(mnras.size_from_aspect(mode.figaspect, mode.scale))
     fig.subplots_adjust(wspace=0, hspace=0)
+
 
 def load(save: bool, mode: str):
     mode = modes_settings[mode]

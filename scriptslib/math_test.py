@@ -39,5 +39,5 @@ def test_weighted_median_float_weights():
 
     expected = np.array([3, 2, 3])
     actual = math.weighted_median(arr, weights)
-    
+
     np.testing.assert_array_equal(actual, expected)

@@ -50,7 +50,10 @@ def _get_ode_in_potential(potential, mass, ln_lambda):
     grid_r = np.logspace(-1, 2, 16)
     grid_sig = (
         agama.GalaxyModel(potential, df_host).moments(
-            np.column_stack((grid_r, grid_r * 0, grid_r * 0)), dens=False, vel=False, vel2=True
+            np.column_stack((grid_r, grid_r * 0, grid_r * 0)),
+            dens=False,
+            vel=False,
+            vel2=True,
         )[:, 0]
         ** 0.5
     )

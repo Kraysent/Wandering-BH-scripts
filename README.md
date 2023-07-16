@@ -1,30 +1,18 @@
 # Scripts for the paper about black holes in the Milky Way
 
-### `models_resolution`
+### `softening_distance.py`
+**Goal**: determine the optimal softening distance that sould be applied when evolving the system of
+a given number of points.
 
-The command will run all of the models with different resolutions and show two figures with distance and bound mass plots.
-You might need host and satellite files in `models_resolution/models/sat.csv` and `models_resolution/models/sat.csv`.
+### `bh_orbits.py`
+**Goal**: determine realistic orbits for the black holes to fall onto the centre of the potantial.
+Potential is computed as a multipole approximation of a set of particles representing the galaxy.
 
-```shell
-python3 main.py models-resolution
-```
+### `bh_orbits_visualizer.py`
+**Goal**: predict possible orbits for the black hole from the satellite galaxy. 
 
-For flags description use 
+### `system_generator.py`
+**Goal**: create $N$-body approximation for the Milky Way as a merger of two galaxies.
 
-```shell
-python3 main.py models-resolution --help
-```
-
-### `models_example`
-
-This command will run the actual model with two galaxies and show the pictures of this process.
-
-```shell
-python3 main.py models-example
-```
-
-For flags description use 
-
-```shell
-python3 main.py models-example --help
-```
+### `eccentricity_example.py`
+**Goal**: create example of the orbits of the black hole in a given potential. 

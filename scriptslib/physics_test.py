@@ -6,7 +6,14 @@ from scriptslib import physics
 
 
 def generate_system(scale_velocity: float = 200.0, number_of_particles: int = 5000):
-    potential_params = dict(type="spheroid", gamma=1, beta=3, scaleradius=4.2, densitynorm=1, outerCutoffRadius=100)
+    potential_params = dict(
+        type="spheroid",
+        gamma=1,
+        beta=3,
+        scaleradius=4.2,
+        densitynorm=1,
+        outerCutoffRadius=100,
+    )
     vcirc1 = (-agama.Potential(potential_params).force(10, 0, 0)[0] * 10) ** 0.5
     potential_params["densitynorm"] = (scale_velocity / vcirc1) ** 2
     potential = agama.Potential(potential_params)
@@ -19,6 +26,15 @@ def generate_system(scale_velocity: float = 200.0, number_of_particles: int = 50
     particles.mass = p_m | units.MSun
 
     return particles
+
+
+def test_median_iterative_center_units():
+    "mostly a sanity check"
+    agama.setUnits(mass=1, length=1, velocity=1)  # 1 MSun, 1 kpc, 1 kms => time = 0.98 Gyr
+    particles = generate_system()
+    iterative_center = physics.median_iterative_center(particles, 1, 10 | units.kpc)
+
+    iterative_center.value_in(units.kpc)
 
 
 def test_median_iterative_center_spherical_system_origin():

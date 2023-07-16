@@ -1,6 +1,6 @@
 from typing import Callable
-import agama
 
+import agama
 import numpy as np
 from amuse.lab import Particles, VectorQuantity, units
 from scipy.spatial.transform import Rotation
@@ -9,7 +9,14 @@ ParticlesFunc = Callable[[Particles], Particles]
 
 
 def generate_spherical_system(n_points: int = 400000) -> Particles:
-    potential_params = dict(type="spheroid", gamma=1, beta=3, scaleradius=4.2, densitynorm=1, outerCutoffRadius=100)
+    potential_params = dict(
+        type="spheroid",
+        gamma=1,
+        beta=3,
+        scaleradius=4.2,
+        densitynorm=1,
+        outerCutoffRadius=100,
+    )
     vcirc1 = (-agama.Potential(potential_params).force(10, 0, 0)[0] * 10) ** 0.5
     potential_params["densitynorm"] = (200.0 / vcirc1) ** 2
 
@@ -116,6 +123,15 @@ def move_to_origin() -> ParticlesFunc:
 def enumerate() -> ParticlesFunc:
     def wrapper(particles: Particles) -> Particles:
         particles.id = np.arange(0, len(particles))
+
+        return particles
+
+    return wrapper
+
+
+def set_attribute(name: str, value) -> ParticlesFunc:
+    def wrapper(particles: Particles) -> Particles:
+        setattr(particles, name, value)
 
         return particles
 

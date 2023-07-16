@@ -6,10 +6,10 @@ def log(*args):
 
     for arg in args:
         if isinstance(arg, datetime):
-            strings.append(arg.strftime('%H:%M:%S'))
+            strings.append(arg.strftime("%H:%M:%S"))
         elif isinstance(arg, float):
             strings.append(f"{arg:.03f}")
         else:
             strings.append(f"{arg}")
 
-    print('\t'.join(strings))
+    print("\t".join(strings))
