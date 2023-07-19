@@ -12,15 +12,11 @@ import scriptslib
 from scriptslib import ellipse_approx, mnras
 from scriptslib import particles as sparticles
 from scriptslib import physics
-from scriptslib import plot as splot
-
-TIME_UNIT = units.Gyr
 
 EPS = 0.4 | units.kpc
 DT = 0.5**6 | units.Gyr
-MAX_TIME = 5.0
-HOST_SAMPLE = 40000
-SAT_SAMPLE = 20000
+HOST_SAMPLE = 400000
+SAT_SAMPLE = 200000
 VEL_ABS = 180  # kms
 DISTANCE_ABS = 100  # kpc
 INCLINATION = np.deg2rad(30)
@@ -36,7 +32,7 @@ Settings = namedtuple("Settings", ["figaspect", "scale"])
 
 modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
 
-rng = range(0, 210)
+rng = range(210, 300)
 params = (
     [Params(35, "r", f"i30e35_{i}") for i in rng]
     + [Params(40, "r", f"i30e40_{i}") for i in rng]

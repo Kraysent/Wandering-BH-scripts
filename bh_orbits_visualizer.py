@@ -7,10 +7,11 @@ from matplotlib import patches as mpatches
 
 from scriptslib import mnras
 from scriptslib import plot as splot
+from scipy import stats
 
-INPUT_DIR = "bh_orbit_visualizer/input/{}"
+INPUT_DIR = "models_velocity_vector/results/{}"
 EXTENT = [0, 1, 0, 30]
-RESOLUTION_1D = 200
+RESOLUTION_1D = 300
 
 
 @dataclass
@@ -21,11 +22,11 @@ class Params:
 
 
 parameters = [
-    Params("orbits/i30e35_*", "r", "$35^{\circ}$"),
-    Params("orbits/i30e40_*", "b", "$40^{\circ}$"),
-    Params("orbits/i30e45_*", "g", "$45^{\circ}$"),
-    Params("orbits/i30e50_*", "y", "$50^{\circ}$"),
-    Params("orbits/i30e55_*", "m", "$55^{\circ}$"),
+    Params("i30e35_*", "r", "$35^{\circ}$"),
+    Params("i30e40_*", "b", "$40^{\circ}$"),
+    Params("i30e45_*", "g", "$45^{\circ}$"),
+    Params("i30e50_*", "y", "$50^{\circ}$"),
+    Params("i30e55_*", "m", "$55^{\circ}$"),
 ]
 
 
@@ -34,7 +35,7 @@ def show():
     colors = []
 
     fig, ax = plt.subplots()
-    patches = []
+    legend_patches = []
 
     for param in parameters:
         files = glob.glob(INPUT_DIR.format(param.file_pattern))
@@ -47,14 +48,18 @@ def show():
                 semimajor_axes[i] = sma
                 eccentricities[i] = ecc
 
+        ecc_mean, ecc_std = np.median(eccentricities), stats.median_abs_deviation(eccentricities)
+        sma_mean, sma_std = np.median(semimajor_axes), stats.median_abs_deviation(semimajor_axes)
+        print(f"{param}")
+        print(f"{ecc_mean} +- {ecc_std}")
+        print(f"{sma_mean} +- {sma_std}")
+
         sma_filter = semimajor_axes < EXTENT[-1]
         semimajor_axes = semimajor_axes[sma_filter]
         eccentricities = eccentricities[sma_filter]
 
-        print(eccentricities)
-        print(semimajor_axes)
-        hist = np.zeros((RESOLUTION_1D, RESOLUTION_1D))
-        ecc_indices = np.digitize(eccentricities, np.linspace(*EXTENT[:2], RESOLUTION_1D))
+        hist = np.zeros((RESOLUTION_1D * 2, RESOLUTION_1D))
+        ecc_indices = np.digitize(eccentricities, np.linspace(*EXTENT[:2], RESOLUTION_1D * 2))
         sma_indices = np.digitize(semimajor_axes, np.linspace(*EXTENT[2:], RESOLUTION_1D))
 
         for i in range(len(semimajor_axes)):
@@ -62,9 +67,8 @@ def show():
 
         matrices.append(hist[:, ::-1].T)
         colors.append(param.color)
-        patches.append(mpatches.Patch(color=param.color, label=param.name))
+        legend_patches.append(mpatches.Patch(color=param.color, label=param.name))
 
-    # plt.plot(eccentricities, semimajor_axes, "g.")
     pic_r, pic_g, pic_b = splot.plot_colored_hist(matrices, colors)
     ax.imshow(
         np.stack([pic_r, pic_g, pic_b], axis=2),
@@ -75,10 +79,9 @@ def show():
     ax.set_xlabel("Eccentricity", fontsize=mnras.FONT_SIZE)
     ax.set_ylabel("Semi-major axis, kpc", fontsize=mnras.FONT_SIZE)
     ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
-    ax.legend(handles=patches, loc="lower left", fontsize=mnras.FONT_SIZE)
-    # cbar = plt.colorbar(pic)
-    # cbar.set_label("Number of models with given orbit", fontsize=mnras.FONT_SIZE)
-    # cbar.ax.tick_params(labelsize=mnras.FONT_SIZE)
+    ax.legend(handles=legend_patches, loc="lower left", fontsize=mnras.FONT_SIZE)
+    ax.set_xlim(0.7, 1)
+    ax.set_ylim(13, 30)
 
     plt.show()
 

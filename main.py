@@ -3,8 +3,7 @@ import click
 import all_models.main as module_all_models
 import models_example.main as example
 import models_resolution.main as resolution
-import models_velocity_vector.main as velocities
-from bh_orbits import eccentricity_example
+from bh_sinking_time_computer import eccentricity_example
 
 
 class CommonCommand(click.core.Command):
@@ -80,32 +79,6 @@ def models_example(save, plot, separate_plot, **kwargs):
     else:
         example.model(save, plot)
 
-
-@cli.command(cls=CommonCommand)
-@click.option(
-    "-p",
-    "--plot",
-    is_flag=True,
-    type=bool,
-    help="Show data that was generated when running without this flag.",
-)
-@click.option(
-    "-s",
-    "--save",
-    is_flag=True,
-    type=bool,
-    help="Save to PDF or just show figures?",
-)
-def models_velocities(plot, save, mode, **kwargs):
-    if plot:
-        velocities.plot(save, mode)
-    else:
-        velocities.compute()
-
-
-@cli.command(cls=CommonCommand, name="bh-orbits-example")
-def bh_orbits_example(**kwargs):
-    eccentricity_example.model()
 
 
 @cli.command(cls=CommonCommand)

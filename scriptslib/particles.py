@@ -136,3 +136,12 @@ def set_attribute(name: str, value) -> ParticlesFunc:
         return particles
 
     return wrapper
+
+def select(function: Callable, attributes: list[str]) -> ParticlesFunc:
+    def wrapper(particles: Particles) -> Particles:
+        p = particles.select(function, attributes)
+
+        return p
+
+    return wrapper
+
