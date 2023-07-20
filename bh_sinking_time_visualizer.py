@@ -33,9 +33,9 @@ class ParameterSet:
 
 
 parameters = [
-    ParameterSet(1e6, "r", "$10^6 M_{\odot}$", [13.0], contour_level_fmt_smaller),
-    ParameterSet(1e7, "g", "$10^7 M_{\odot}$", [7.0, 10.0, 13.0], contour_level_fmt),
-    ParameterSet(1e8, "b", "$10^8 M_{\odot}$", [4.0, 7.0, 10.0, 13.0], contour_level_fmt),
+    ParameterSet(1e6, "r", "$10^6\ M_{\odot}$", [13.0], contour_level_fmt_smaller),
+    ParameterSet(1e7, "g", "$10^7\ M_{\odot}$", [7.0, 10.0, 13.0], contour_level_fmt),
+    ParameterSet(1e8, "b", "$10^8\ M_{\odot}$", [2.0, 4.0, 7.0, 10.0, 13.0], contour_level_fmt),
 ]
 
 
@@ -47,7 +47,7 @@ def prepare_axes(ax):
     ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
 
 
-def display(additional_results):
+def display(additional_results: str | None = None):
     fig, ax = plt.subplots()
     fig.set_size_inches(mnras.size_from_aspect(1))
     prepare_axes(ax)
@@ -108,4 +108,4 @@ def display(additional_results):
 
 
 if __name__ == "__main__":
-    display(additional_results="results.json")
+    display()

@@ -11,7 +11,6 @@ import scriptslib
 from scriptslib import mnras, physics
 
 RESULTS_DIR = "eccentricity_example/results/{}"
-MODELS_DIR = "bh_orbits/models/{}"
 
 PERICENTRE = 5  # kpc
 MAX_TIME = 4  # Gyr
@@ -72,6 +71,15 @@ def _get_ode_in_potential(potential, mass, ln_lambda):
     return ode
 
 
+def label_formatter(e, mass):
+    exponent = len(str(int(mass))) - 1
+    mantisse = mass / 10**exponent
+    if mantisse != 1:
+        return f"e: {e:.01f}, M: ${mantisse:.01f}\cdot 10^{exponent}\ M_{{\odot}}$"
+    else:
+        return f"e: {e:.01f}, M: $10^{exponent}\ M_{{\odot}}$"
+
+
 @dataclass
 class Parameters:
     eccentricity: float
@@ -87,15 +95,15 @@ def model():
     potential = scriptslib.potential_from_particles(particles)
 
     params = [
-        Parameters(0.0, "red", "solid", 1e6),
-        Parameters(0.4, "green", "solid", 1e6),
-        Parameters(0.9, "blue", "solid", 1e6),
-        Parameters(0.0, "red", "dashed", 1e7),
+        Parameters(0.0, "red", "dotted", 1e6),
+        Parameters(0.4, "red", "dashed", 1e6),
+        Parameters(0.7, "red", "solid", 1e6),
+        Parameters(0.0, "green", "dotted", 1e7),
         Parameters(0.4, "green", "dashed", 1e7),
-        Parameters(0.7, "blue", "dashed", 1e7),
-        Parameters(0.0, "red", "dotted", 1e8),
-        Parameters(0.4, "green", "dotted", 1e8),
-        Parameters(0.7, "blue", "dotted", 1e8),
+        Parameters(0.7, "green", "solid", 1e7),
+        Parameters(0.0, "blue", "dotted", 1e8),
+        Parameters(0.4, "blue", "dashed", 1e8),
+        Parameters(0.7, "blue", "solid", 1e8),
     ]
 
     fig1, ax1 = plt.subplots(1, 1)
@@ -128,7 +136,7 @@ def model():
             traj[:, 0],
             traj[:, 1],
             color=param.color,
-            label=f"e = {param.eccentricity:.02f}, M = {param.mass:.02e}",
+            label=label_formatter(param.eccentricity, param.mass),
             linewidth=1,
             linestyle=param.linestyle,
         )
@@ -137,7 +145,7 @@ def model():
             times[:merger_index],
             r[:merger_index],
             color=param.color,
-            label=f"e = {param.eccentricity:.02f}, M = {param.mass:.02e}",
+            label=label_formatter(param.eccentricity, param.mass),
             linewidth=1,
             linestyle=param.linestyle,
         )
@@ -148,11 +156,13 @@ def model():
     ax2.set_ylim(0, 11)
     ax2.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
     ax2.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
-    ax1.set_xlabel("x, kpc")
-    ax1.set_ylabel("y, kpc")
+    ax1.set_xlabel("x, kpc", fontsize=mnras.FONT_SIZE)
+    ax1.set_ylabel("y, kpc", fontsize=mnras.FONT_SIZE)
     ax1.grid(True)
     ax2.grid(True)
     ax2.legend(fontsize=mnras.FONT_SIZE)
+    ax1.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
+    ax2.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
     fig1.savefig(RESULTS_DIR.format("eccentricity_orbits.pdf"), pad_inches=0, bbox_inches="tight")
     fig2.savefig(RESULTS_DIR.format("eccentricity_radii.pdf"), pad_inches=0, bbox_inches="tight")
 
