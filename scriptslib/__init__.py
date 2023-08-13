@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import agama
+from amuse import io
 import numpy as np
 import pandas as pd
 from amuse.lab import Particles
@@ -50,6 +51,10 @@ def read_csv(
     return particles
 
 
+def read_hdf5(path: str) -> Particles:
+    return io.read_set_from_file(path, "hdf5")
+
+
 def write_csv(particles: Particles, path: str, units: Units = default_units):
     output_table = pd.DataFrame()
     output_table["x"] = particles.x.value_in(units.space)
@@ -60,6 +65,10 @@ def write_csv(particles: Particles, path: str, units: Units = default_units):
     output_table["vz"] = particles.vz.value_in(units.vel)
     output_table["m"] = particles.mass.value_in(units.mass)
     output_table.to_csv(path, sep=" ")
+
+
+def write_hdf5(particles: Particles, path: str):
+    io.write_set_to_file(particles, path, "hdf5", overwrite_file=True)
 
 
 def downsample(particles: Particles, to: int) -> Particles:

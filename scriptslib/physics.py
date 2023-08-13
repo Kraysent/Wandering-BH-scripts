@@ -46,7 +46,7 @@ def leapfrog(
 vector_length = lambda v, unit, axis=0: (v.value_in(unit) ** 2).sum(axis=axis) ** 0.5
 
 
-def distance(host: Particles, satellite: Particles, unit: core.named_unit) -> float:
+def distance(host: Particles, satellite: Particles, unit: core.named_unit = units.kpc) -> float:
     return vector_length(host.center_of_mass() - satellite.center_of_mass(), unit)
 
 
@@ -201,3 +201,29 @@ def bound_mass(
         .total_mass()
         .value_in(mass_unit)
     )
+
+def get_density_distribution(
+    particles: Particles,
+    center: VectorQuantity = [0, 0, 0] | units.kpc,
+    resolution=100,
+    cutoff_radius: ScalarQuantity = 200 | units.kpc,
+) -> tuple[VectorQuantity, VectorQuantity]:
+    """
+    General algorithm:
+    - sort radii and masses together
+    - put radii into a histogram and get indices of the bin that correspond to given radius
+    - take masses with corresponding indices and sum all of the masses in a given bin of the histogram.
+    - divide masses in these bin by the volume of the corresponding bin: (4/3 * pi * (r_1^3 - r_2^3))
+    """
+    radii = math.get_lengths(particles.position - center)
+    masses = particles.mass
+    radii, masses = math.sort_with(radii, masses)
+
+    bins = np.linspace(0, cutoff_radius.value_in(units.kpc), resolution) | units.kpc
+    # indicies always != 0 because r is never < 0.
+    indicies = np.digitize(radii.value_in(units.kpc), bins.value_in(units.kpc))
+    # hence, bincount will always have 0 at the index 0 and we can skip it.
+    layer_masses = np.bincount(indicies, weights=masses.value_in(units.MSun))[1:-1] | units.MSun
+    layer_volumes = 4 / 3 * np.pi * (bins[1:] ** 3 - bins[:-1] ** 3)
+
+    return bins[1:], layer_masses / layer_volumes

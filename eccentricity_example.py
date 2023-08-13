@@ -8,7 +8,7 @@ import scipy
 from amuse.lab import units
 
 import scriptslib
-from scriptslib import mnras, physics
+from scriptslib import mnras, plot as splot
 
 RESULTS_DIR = "eccentricity_example/results/{}"
 
@@ -95,15 +95,15 @@ def model():
     potential = scriptslib.potential_from_particles(particles)
 
     params = [
-        Parameters(0.0, "red", "dotted", 1e6),
-        Parameters(0.4, "red", "dashed", 1e6),
-        Parameters(0.7, "red", "solid", 1e6),
-        Parameters(0.0, "green", "dotted", 1e7),
-        Parameters(0.4, "green", "dashed", 1e7),
-        Parameters(0.7, "green", "solid", 1e7),
-        Parameters(0.0, "blue", "dotted", 1e8),
-        Parameters(0.4, "blue", "dashed", 1e8),
-        Parameters(0.7, "blue", "solid", 1e8),
+        Parameters(0.0, splot.colors[0], "dotted", 1e6),
+        Parameters(0.4, splot.colors[0], "dashed", 1e6),
+        Parameters(0.7, splot.colors[0], "solid", 1e6),
+        Parameters(0.0, splot.colors[2], "dotted", 1e7),
+        Parameters(0.4, splot.colors[2], "dashed", 1e7),
+        Parameters(0.7, splot.colors[2], "solid", 1e7),
+        Parameters(0.0, splot.colors[5], "dotted", 1e8),
+        Parameters(0.4, splot.colors[5], "dashed", 1e8),
+        Parameters(0.7, splot.colors[5], "solid", 1e8),
     ]
 
     fig1, ax1 = plt.subplots(1, 1)

@@ -10,6 +10,7 @@ from scriptslib import plot as splot
 from scipy import stats
 
 INPUT_DIR = "models_velocity_vector/results/{}"
+OUTPUT_DIR = "bh_orbit_visualizer/{}"
 EXTENT = [0, 1, 0, 30]
 RESOLUTION_1D = 300
 
@@ -22,11 +23,11 @@ class Params:
 
 
 parameters = [
-    Params("i30e35_*", "r", "$35^{\circ}$"),
-    Params("i30e40_*", "b", "$40^{\circ}$"),
-    Params("i30e45_*", "g", "$45^{\circ}$"),
-    Params("i30e50_*", "y", "$50^{\circ}$"),
-    Params("i30e55_*", "m", "$55^{\circ}$"),
+    Params("i30e35_*", splot.colors[0], "$35^{\circ}$"),
+    Params("i30e40_*", splot.colors[3], "$40^{\circ}$"),
+    Params("i30e45_*", splot.colors[1], "$45^{\circ}$"),
+    Params("i30e50_*", splot.colors[5], "$50^{\circ}$"),
+    Params("i30e55_*", splot.colors[2], "$55^{\circ}$"),
 ]
 
 
@@ -82,8 +83,8 @@ def show():
     ax.legend(handles=legend_patches, loc="lower left", fontsize=mnras.FONT_SIZE)
     ax.set_xlim(0.7, 1)
     ax.set_ylim(13, 30)
-
-    plt.show()
+    plt.tight_layout()
+    fig.savefig(OUTPUT_DIR.format("predictions.pdf"))
 
 
 if __name__ == "__main__":

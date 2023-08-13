@@ -137,11 +137,28 @@ def set_attribute(name: str, value) -> ParticlesFunc:
 
     return wrapper
 
-def select(function: Callable, attributes: list[str]) -> ParticlesFunc:
+
+def set_attribute_by_condition(
+    condition: Callable,
+    condition_attributes: list[str],
+    attribute: str,
+    value_if_true,
+    value_if_false,
+):
     def wrapper(particles: Particles) -> Particles:
-        p = particles.select(function, attributes)
+        setattr(particles, attribute, value_if_false)
+        p = particles.select(condition, condition_attributes)
+        setattr(p, attribute, value_if_true)
+
+        return particles
+
+    return wrapper
+
+
+def select(condition: Callable, attributes: list[str]) -> ParticlesFunc:
+    def wrapper(particles: Particles) -> Particles:
+        p = particles.select(condition, attributes)
 
         return p
 
     return wrapper
-

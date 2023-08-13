@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import seaborn
 import json
 from typing import Callable
 from matplotlib import pyplot as plt
@@ -6,7 +7,7 @@ from matplotlib.markers import MarkerStyle
 import numpy as np
 from matplotlib.patches import Patch
 
-from scriptslib import mnras
+from scriptslib import mnras, plot as splot
 
 SMA_MAX = 30
 MAX_TIME = 13.7  # Gyr
@@ -26,16 +27,15 @@ def contour_level_fmt_smaller(x):
 @dataclass
 class ParameterSet:
     mass: float
-    color: str
+    color: tuple[int, int, int]
     label: str
     levels: list[float]
     level_formatter: Callable
 
-
 parameters = [
-    ParameterSet(1e6, "r", "$10^6\ M_{\odot}$", [13.0], contour_level_fmt_smaller),
-    ParameterSet(1e7, "g", "$10^7\ M_{\odot}$", [7.0, 10.0, 13.0], contour_level_fmt),
-    ParameterSet(1e8, "b", "$10^8\ M_{\odot}$", [2.0, 4.0, 7.0, 10.0, 13.0], contour_level_fmt),
+    ParameterSet(1e6, splot.colors[0], "$10^6\ M_{\odot}$", [13.0], contour_level_fmt_smaller),
+    ParameterSet(1e7, splot.colors[5], "$10^7\ M_{\odot}$", [7.0, 10.0, 13.0], contour_level_fmt),
+    ParameterSet(1e8, splot.colors[2], "$10^8\ M_{\odot}$", [2.0, 4.0, 7.0, 10.0, 13.0], contour_level_fmt),
 ]
 
 
@@ -63,7 +63,7 @@ def display(additional_results: str | None = None):
             eccs,
             smas,
             sinking_times,
-            colors=params.color,
+            colors=[params.color],
             levels=params.levels,
         )
         ax.clabel(

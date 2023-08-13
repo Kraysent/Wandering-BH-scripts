@@ -1,3 +1,4 @@
+from collections import deque
 from datetime import datetime
 
 import agama
@@ -15,33 +16,6 @@ from scriptslib.log import log
 MODELS_DIR = "system_generator/models/{}"
 
 
-def get_density_distribution(
-    particles: Particles,
-    center: VectorQuantity = [0, 0, 0] | units.kpc,
-    resolution=100,
-    cutoff_radius: ScalarQuantity = 200 | units.kpc,
-) -> tuple[VectorQuantity, VectorQuantity]:
-    """
-    General algorithm:
-    - sort radii and masses together
-    - put radii into a histogram and get indices of the bin that correspond to given radius
-    - take masses with corresponding indices and sum all of the masses in a given bin of the histogram.
-    - divide masses in these bin by the volume of the corresponding bin: (4/3 * pi * (r_1^3 - r_2^3))
-    """
-    radii = math.get_lengths(particles.position - center)
-    masses = particles.mass
-    radii, masses = math.sort_with(radii, masses)
-
-    bins = np.linspace(0, cutoff_radius.value_in(units.kpc), resolution) | units.kpc
-    # indicies always != 0 because r is never < 0.
-    indicies = np.digitize(radii.value_in(units.kpc), bins.value_in(units.kpc))
-    # hence, bincount will always have 0 at the index 0 and we can skip it.
-    layer_masses = np.bincount(indicies, weights=masses.value_in(units.MSun))[1:-1] | units.MSun
-    layer_volumes = 4 / 3 * np.pi * (bins[1:] ** 3 - bins[:-1] ** 3)
-
-    return bins[1:], layer_masses / layer_volumes
-
-
 def generate_snapshot():
     MAX_TIME = 10.0 | units.Gyr
     DT = 0.5**7 | units.Gyr
@@ -50,6 +24,7 @@ def generate_snapshot():
     SAT_N = 500000
     INCLINATION = np.deg2rad(0)
     LONG_ASC_NODE = np.deg2rad(45)
+    output_times = deque(np.arange(0, 10, 0.5))
     position_unit_vector = [np.cos(INCLINATION), 0, np.sin(INCLINATION)] | units.kpc
     velocity_unit_vector = [
         -np.cos(INCLINATION) * np.cos(LONG_ASC_NODE),
@@ -60,6 +35,9 @@ def generate_snapshot():
     host_particles = sparticles.pipe(
         scriptslib.read_csv(MODELS_DIR.format("host.csv")),
         sparticles.downsample(HOST_N),
+        sparticles.set_attribute("system", "host"),
+        sparticles.enumerate(),
+        sparticles.set_attribute_by_condition(lambda id: id / HOST_N < 0.2, ["id"], "is_barion", True, False),
     )
     sat_particles = sparticles.pipe(
         scriptslib.read_csv(MODELS_DIR.format("sat.csv")),
@@ -67,6 +45,9 @@ def generate_snapshot():
         sparticles.rotate("y", INCLINATION),
         sparticles.append_position(position_unit_vector * 100),
         sparticles.append_velocity(velocity_unit_vector * 180),
+        sparticles.set_attribute("system", "sat"),
+        sparticles.enumerate(),
+        sparticles.set_attribute_by_condition(lambda id: id / SAT_N < 0.2, ["id"], "is_barion", True, False),
     )
 
     particles = sparticles.pipe(
@@ -82,12 +63,13 @@ def generate_snapshot():
     while time < MAX_TIME:
         log(datetime.now(), i, time.value_in(units.Gyr))
         particles = physics.leapfrog(particles, EPS, DT)
-        time += DT
 
-        if i % 100 == 0:
-            radii, densities = get_density_distribution(
+        if len(output_times) > 0 and time >= output_times[0] | units.Gyr:
+            center = physics.median_iterative_center(particles, 8, 5 | units.kpc)
+            particles.position -= center
+            radii, densities = physics.get_density_distribution(
                 particles,
-                physics.median_iterative_center(particles, 8, 5 | units.kpc),
+                [0, 0, 0] | units.kpc,
                 cutoff_radius=50 | units.kpc,
             )
 
@@ -111,15 +93,19 @@ def generate_snapshot():
                 densities.value_in(units.MSun / units.kpc**3),
                 label=f"{time.value_in(units.Gyr):.03f} Gyr",
             )
-            # ax2.set_yscale("log")
+            ax2.set_yscale("log")
             plt.savefig(f"system_generator/output/{time.value_in(units.Gyr):.03f}.pdf")
             plt.cla()
 
+            scriptslib.write_hdf5(particles, MODELS_DIR.format(f"{time.value_in(units.Gyr):.03f}.hdf5"))
+            output_times.popleft()
+
         i += 1
+        time += DT
 
     center = physics.median_iterative_center(particles, 8, 5 | units.kpc)
     particles.position -= center
-    scriptslib.write_csv(particles, MODELS_DIR.format("particles.csv"))
+    scriptslib.write_hdf5(particles, MODELS_DIR.format("particles.hdf5"))
 
 
 if __name__ == "__main__":
