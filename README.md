@@ -31,7 +31,7 @@ Potential is computed as a multipole approximation of a set of particles represe
 If the system is not trivial, the computation part can take a lot of time: up to several hours.
 In order to plot the data fast, one should save it to file and then read it with visualiser.
 
-This also gives an ability to change the visualisation without recomputing everything.
+This approach also allows changing the visualisation without recomputing everything.
 
 **General guidelines**:
 
@@ -41,7 +41,7 @@ This also gives an ability to change the visualisation without recomputing every
 
 **For example**:
 - If the computer evolves system of N points and visualiser then shows the density of the points in a given point, computing part of the script *should* save the density map or (depending on a particular case) the list of points. It *should not* save the RGB map.
-- If the computing part computes some (physical) value on a grid of points, it *should* save this value as a 2D array and then plot it with visualiser part as needed. It *should not* save the contour lines or any normalisation of this data.
+- If the computing part computes some (physical) value on a grid of points, it *should* save this value as a 2D array (heatmap of the values) and then plot it with visualiser part as needed. It *should not* save the contour lines or any non-trivial normalisation of this data.
 
 ### Making scripts parallelisable
 
@@ -61,10 +61,10 @@ To make the computations more effective, one should try to use `concurrent` modu
     ```
     to launch the computations of the independent parts as a separate processes on a separate cores.
 - This approach comes with a number of tradeoffs:
-    - If one computation is dependent on the results of the other, this approach is not applicable and the computations shpuld be consecutive.
+    - If one computation is dependent on the results of the other, this approach is not applicable and the computations should be consecutive.
     - One cannot easily transfer data and variables between processes (though this is possible using sockets but it is *significantly* harder (and slower) than usual).
-    - Each computation part should be primarily CPU bound (i.e. mostly computations) and not IO bound (i.e. mostly writing to/reading from the disk).
-    - One should not using global mutable variables to avoid data race.
+    - Each computation part should be primarily CPU bound (i.e. mostly computations) and not I/O bound (i.e. mostly writing to/reading from the disk).
+    - One should not use global mutable variables to avoid data race.
 
 **For example**:
 - If the computation part of the script is the N-body model of some given system with variable initial velocity, mass, etc. one should create
@@ -80,4 +80,4 @@ To make the computations more effective, one should try to use `concurrent` modu
     def process(param: Params):
         ...
     ```
-    and then use `concurrent.futures` to parallelise calls to `process` sunction for each member of `parameters` list.
+    and then use `concurrent.futures` to parallelise calls to `process` function for each member of `parameters` list.
