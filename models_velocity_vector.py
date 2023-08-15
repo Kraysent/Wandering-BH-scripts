@@ -1,5 +1,6 @@
 from collections import deque, namedtuple
 from concurrent import futures
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterator
 
@@ -27,18 +28,26 @@ ORBIT_QUEUE_LENGTH = 30
 RESULTS_DIR = "models_velocity_vector/results/{}"
 MODELS_DIR = "models_velocity_vector/models/{}"
 
-Params = namedtuple("Params", ["speed_angle", "line_clr", "name"])
+
+@dataclass
+class Params:
+    speed_angle: float
+    line_clr: str
+    name: str
+    sat_model: str
+
+
 Settings = namedtuple("Settings", ["figaspect", "scale"])
 
 modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
 
-rng = range(600)
+rng = range(150)
 params = (
-    [Params(35, "r", f"i30e35_{i}") for i in rng]
-    + [Params(40, "r", f"i30e40_{i}") for i in rng]
-    + [Params(45, "r", f"i30e45_{i}") for i in rng]
-    + [Params(50, "r", f"i30e50_{i}") for i in rng]
-    + [Params(55, "r", f"i30e55_{i}") for i in rng]
+    [Params(35, "r", f"i30e35_{i}", "sat1.hdf5") for i in rng]
+    + [Params(40, "r", f"i30e40_{i}", "sat1.hdf5") for i in rng]
+    + [Params(45, "r", f"i30e45_{i}", "sat1.hdf5") for i in rng]
+    + [Params(50, "r", f"i30e50_{i}", "sat1.hdf5") for i in rng]
+    + [Params(55, "r", f"i30e55_{i}", "sat1.hdf5") for i in rng]
 )
 
 
@@ -59,7 +68,7 @@ def prepare_particle_set(params: Params):
 
     angle = np.deg2rad(params.speed_angle)
     sat_particles = sparticles.pipe(
-        scriptslib.read_csv(MODELS_DIR.format("sat.csv")),
+        scriptslib.read_hdf5(MODELS_DIR.format(params.sat_model)),
         sparticles.downsample(SAT_SAMPLE),
         sparticles.rotate("y", INCLINATION),
         sparticles.append_position([np.cos(INCLINATION), 0, np.sin(INCLINATION)] * (DISTANCE_ABS | units.kpc)),
@@ -122,11 +131,6 @@ def process(param: Params):
                 positions[s_index, :] = snapshot[indexes].center_of_mass().value_in(units.kpc)
 
             semimajor_axis, eccentricity = ellipse_approx.fit_3d_ellipse(positions)
-
-            # ax = plt.figure().add_subplot(projection="3d")
-            # ax.plot(positions[:, 0], positions[:, 1], positions[:, 2])
-            # ax.set_xlabel(f"{semimajor_axis:.04f}\t{eccentricity:.04f}")
-            # plt.show()
 
             with open(RESULTS_DIR.format(f"{param.name}.csv"), "w") as file:
                 file.writelines([f"{semimajor_axis},{eccentricity}"])

@@ -15,17 +15,12 @@ def prepare_axes(dist_axes, bound_mass_axes):
     for ax in dist_axes, bound_mass_axes:
         ax.grid(True)
         ax.set_ylim(0)
-        ax.set_xlim(0, 5)
+        ax.set_xlim(0, 4)
         ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
 
     # sort labels in axes
     handles, labels = dist_axes.get_legend_handles_labels()
-    order = np.argsort([int(l) for l in labels])
-    dist_axes.legend(
-        [handles[i] for i in order],
-        [labels[i] for i in order],
-        prop={"size": mnras.FONT_SIZE},
-    )
+    dist_axes.legend(handles, labels)
     dist_axes.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
 
     bound_mass_axes.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
@@ -43,9 +38,14 @@ def show():
     for i, filename in enumerate(filenames):
         angle = float(Path(filename).stem)
         parameters = pd.read_csv(filename)
+        parameters.bound_mass = parameters.bound_mass
+        max_bound_mass = parameters.bound_mass.to_numpy()[0]
+
+        threshold = np.argmax(parameters.bound_mass < 0.01 * max_bound_mass)
+
         ax1.plot(
-            parameters["times"],
-            parameters["distances"],
+            parameters["times"][:threshold],
+            parameters["distances"][:threshold],
             label=f"{angle}",
             color=splot.colors[2 * i],
         )
