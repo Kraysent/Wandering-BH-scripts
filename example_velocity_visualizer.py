@@ -8,7 +8,7 @@ import pandas as pd
 from scriptslib import mnras, plot as splot
 
 
-RESULTS_DIR = "resolution/results/{}"
+RESULTS_DIR = "example_velocity/results/{}"
 
 
 def prepare_axes(dist_axes, bound_mass_axes):
@@ -34,36 +34,31 @@ def prepare_axes(dist_axes, bound_mass_axes):
 
 
 def show():
-    filenames = glob.glob(RESULTS_DIR.format("*-*.csv"))
-    filenames = sorted(
-        filenames,
-        key=lambda name: sum(map(int, Path(name).stem.split("-"))),
-        reverse=True,
-    )
+    filenames = glob.glob(RESULTS_DIR.format("*.csv"))
 
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
     fig.set_size_inches(mnras.size_from_aspect(1))
     fig.subplots_adjust(wspace=0, hspace=0)
 
     for i, filename in enumerate(filenames):
-        host_n, sat_n = map(lambda x: int(x), Path(filename).stem.split("-"))
+        angle = float(Path(filename).stem)
         parameters = pd.read_csv(filename)
         ax1.plot(
             parameters["times"],
             parameters["distances"],
-            label=f"{host_n+sat_n}",
-            color=splot.colors[i],
+            label=f"{angle}",
+            color=splot.colors[2 * i],
         )
         ax2.plot(
             parameters["times"],
             parameters["bound_mass"],
-            label=f"{host_n+sat_n}",
-            color=splot.colors[i],
+            label=f"{angle}",
+            color=splot.colors[2 * i],
         )
 
     prepare_axes(ax1, ax2)
 
-    plt.savefig(RESULTS_DIR.format("resolution.pdf"), bbox_inches="tight")
+    plt.savefig(RESULTS_DIR.format("velocity_vector.pdf"), bbox_inches="tight")
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ Settings = namedtuple("Settings", ["figaspect", "scale"])
 
 modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
 
-rng = range(210, 300)
+rng = range(600)
 params = (
     [Params(35, "r", f"i30e35_{i}") for i in rng]
     + [Params(40, "r", f"i30e40_{i}") for i in rng]

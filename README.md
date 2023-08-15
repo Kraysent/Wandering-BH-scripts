@@ -28,7 +28,7 @@ Potential is computed as a multipole approximation of a set of particles represe
 If the system is not trivial, the computation part can take a lot of time: up to several hours.
 In order to plot the data fast, one should save it to file and then read it with visualiser.
 
-This also gives an ability to change the visualisation withoud recomputing everuthing.
+This also gives an ability to change the visualisation without recomputing everything.
 
 **General guidelines are**:
 
