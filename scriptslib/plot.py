@@ -80,9 +80,11 @@ def plot_colored_hist(maps: list[np.ndarray], colors: list[str]) -> tuple[np.nda
     colors = [mpl_colors.to_rgb(c) for c in colors]
     total_map = sum(maps)
 
-    r_map = sum(maps[i] * colors[i][0] * (1 - maps[i] / maps[i].max()) for i in range(len(maps))) / total_map
-    g_map = sum(maps[i] * colors[i][1] * (1 - maps[i] / maps[i].max()) for i in range(len(maps))) / total_map
-    b_map = sum(maps[i] * colors[i][2] * (1 - maps[i] / maps[i].max()) for i in range(len(maps))) / total_map
+    norm_maps = [maps[i] / maps[i].max() if maps[i].max() != 0 else maps[i] for i in range(len(maps))]
+
+    r_map = sum(maps[i] * colors[i][0] * (1 - norm_maps[i]) for i in range(len(maps))) / total_map
+    g_map = sum(maps[i] * colors[i][1] * (1 - norm_maps[i]) for i in range(len(maps))) / total_map
+    b_map = sum(maps[i] * colors[i][2] * (1 - norm_maps[i]) for i in range(len(maps))) / total_map
 
     r_map[total_map == 0] = 1
     g_map[total_map == 0] = 1
@@ -97,16 +99,18 @@ def plot_colored_points(
     colors: list[str],
     *,
     extent: tuple[float, float, float, float],
-    resolution: int = 500,
+    resolution: int = 300,
     gauss_filter_sigma: float | None = None,
     low=0.7,
+    threshold: float = 0,
 ):
     assert len(xs) == len(ys)
     hists = []
 
-    for x, y, c in zip(xs, ys, colors):
+    for x, y, _ in zip(xs, ys, colors):
         heatmap, _, _ = np.histogram2d(x, y, resolution, [extent[:2], extent[2:]])
-        # heatmap = _log_scale(heatmap.T[::-1, :], low=low)
+
+        heatmap[heatmap <= threshold] = 0
         if gauss_filter_sigma is not None:
             heatmap = filters.gaussian_filter(heatmap, sigma=gauss_filter_sigma)
         heatmap[np.abs(heatmap - low) < 0.000001] = 0

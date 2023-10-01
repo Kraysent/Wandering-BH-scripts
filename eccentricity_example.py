@@ -12,8 +12,8 @@ from scriptslib import mnras, plot as splot
 
 RESULTS_DIR = "eccentricity_example/results/{}"
 
-PERICENTRE = 5  # kpc
-MAX_TIME = 4  # Gyr
+SEMIMAJOR_AXIS = 10  # kpc
+MAX_TIME = 5  # Gyr
 
 
 def _get_df_in_potential(density_func, mass, ln_lambda, sigma):
@@ -95,15 +95,15 @@ def model():
     potential = scriptslib.potential_from_particles(particles)
 
     params = [
-        Parameters(0.0, splot.colors[0], "dotted", 1e6),
-        Parameters(0.4, splot.colors[0], "dashed", 1e6),
-        Parameters(0.7, splot.colors[0], "solid", 1e6),
-        Parameters(0.0, splot.colors[5], "dotted", 1e7),
-        Parameters(0.4, splot.colors[5], "dashed", 1e7),
-        Parameters(0.7, splot.colors[5], "solid", 1e7),
-        Parameters(0.0, splot.colors[2], "dotted", 1e8),
-        Parameters(0.4, splot.colors[2], "dashed", 1e8),
-        Parameters(0.7, splot.colors[2], "solid", 1e8),
+        Parameters(0.0, splot.colors[0], "dotted", 1e7),
+        Parameters(0.4, splot.colors[0], "dashed", 1e7),
+        Parameters(0.7, splot.colors[0], "solid", 1e7),
+        Parameters(0.0, splot.colors[5], "dotted", 1e8),
+        Parameters(0.4, splot.colors[5], "dashed", 1e8),
+        Parameters(0.7, splot.colors[5], "solid", 1e8),
+        Parameters(0.0, splot.colors[2], "dotted", 5e8),
+        Parameters(0.4, splot.colors[2], "dashed", 5e8),
+        Parameters(0.7, splot.colors[2], "solid", 5e8),
     ]
 
     fig1, ax1 = plt.subplots(1, 1)
@@ -119,12 +119,16 @@ def model():
         # assuming the potential of the galaxy to pe spherically symmetrical.
         # This is not always the case (notably for galaxies with disk) but that should give quite good approximation.
         pericentre_velocity = np.sqrt(
-            agama.G * potential.enclosedMass(PERICENTRE) * (1 + param.eccentricity) / PERICENTRE
+            agama.G
+            * potential.enclosedMass(SEMIMAJOR_AXIS * (1 - param.eccentricity))
+            * (1 + param.eccentricity)
+            / (1 - param.eccentricity)
+            / SEMIMAJOR_AXIS
         )
-        print(f"{param.eccentricity}\t{pericentre_velocity}\t{PERICENTRE}")
+        print(f"{param.eccentricity}\t{pericentre_velocity}\t{SEMIMAJOR_AXIS}")
         times = np.linspace(0, MAX_TIME, 2**10)
 
-        ic = np.array([PERICENTRE, 0, 0, 0, pericentre_velocity, 0])
+        ic = np.array([SEMIMAJOR_AXIS * (1 - param.eccentricity), 0, 0, 0, pericentre_velocity, 0])
         traj = scipy.integrate.odeint(ode, ic, times)
 
         r = (traj[:, 0:3] ** 2).sum(axis=1) ** 0.5
@@ -153,14 +157,14 @@ def model():
     ax1.set_xlim(-12, 12)
     ax1.set_ylim(-12, 12)
     ax2.set_xlim(0, MAX_TIME)
-    ax2.set_ylim(0, 11)
+    ax2.set_ylim(0, 12)
     ax2.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
     ax2.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
     ax1.set_xlabel("x, kpc", fontsize=mnras.FONT_SIZE)
     ax1.set_ylabel("y, kpc", fontsize=mnras.FONT_SIZE)
     ax1.grid(True)
     ax2.grid(True)
-    ax2.legend(fontsize=mnras.FONT_SIZE)
+    ax2.legend(fontsize=mnras.FONT_SIZE, loc="upper right")
     ax1.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
     ax2.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
     fig1.savefig(RESULTS_DIR.format("eccentricity_orbits.pdf"), pad_inches=0, bbox_inches="tight")

@@ -22,7 +22,7 @@ VEL_ABS = 180  # kms
 DISTANCE_ABS = 100  # kpc
 INCLINATION = np.deg2rad(30)
 MASS_TRESHOLD = 0.05
-SAT_MASS = 2e11 | units.MSun
+SAT_MASS = 5e11 | units.MSun
 ORBIT_QUEUE_LENGTH = 30
 
 RESULTS_DIR = "models_velocity_vector/results/{}"
@@ -41,13 +41,14 @@ Settings = namedtuple("Settings", ["figaspect", "scale"])
 
 modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
 
-rng = range(150)
+rng = range(0, 50)
 params = (
-    [Params(35, "r", f"i30e35_{i}", "sat1.hdf5") for i in rng]
-    + [Params(40, "r", f"i30e40_{i}", "sat1.hdf5") for i in rng]
-    + [Params(45, "r", f"i30e45_{i}", "sat1.hdf5") for i in rng]
-    + [Params(50, "r", f"i30e50_{i}", "sat1.hdf5") for i in rng]
-    + [Params(55, "r", f"i30e55_{i}", "sat1.hdf5") for i in rng]
+    []
+    + [Params(35, "r", f"i30e35_{i}", "sat5.hdf5") for i in rng]
+    + [Params(40, "r", f"i30e40_{i}", "sat5.hdf5") for i in rng]
+    + [Params(45, "r", f"i30e45_{i}", "sat5.hdf5") for i in rng]
+    + [Params(50, "r", f"i30e50_{i}", "sat5.hdf5") for i in rng]
+    + [Params(55, "r", f"i30e55_{i}", "sat5.hdf5") for i in rng]
 )
 
 
@@ -106,6 +107,7 @@ def process(param: Params):
     print(f"Generating particles for {param}")
     particles = prepare_particle_set(param)
     history = deque()
+    total_mass = particles.select(lambda subset: subset == "sat", ["subset"]).total_mass()
 
     print(f"Started simulation {param}")
     time = 0 | units.Gyr
@@ -118,9 +120,17 @@ def process(param: Params):
             history.popleft()
 
         bound_subset = physics.bound_subset(particles.select(lambda subset: subset == "sat", ["subset"]), EPS)
-        disruption = bound_subset.total_mass() / SAT_MASS
+        disruption = bound_subset.total_mass() / total_mass
         print(
-            f"{param.name}\t{datetime.now().strftime('%H:%M:%S')}\t{time.value_in(units.Gyr):.03f}\t{disruption:.03f}"
+            "\t".join(
+                [
+                    param.name,
+                    datetime.now().strftime("%H:%M:%S"),
+                    f"{time.value_in(units.Gyr):.03f}",
+                    f"{disruption:.03f}",
+                    str(len(history)),
+                ]
+            )
         )
 
         if disruption <= MASS_TRESHOLD:
@@ -138,63 +148,6 @@ def process(param: Params):
             break
 
 
-def _prepare_axes(dist_axes, bound_mass_axes):
-    for ax in dist_axes, bound_mass_axes:
-        ax.grid(True)
-        ax.set_xlim(0, 4.2)
-        ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
-
-    dist_axes.legend(prop={"size": mnras.FONT_SIZE})
-    dist_axes.set_ylabel("Distance, kpc", fontsize=mnras.FONT_SIZE)
-    dist_axes.set_ylim(0, 160)
-
-    bound_mass_axes.set_xlabel("Time, Gyr", fontsize=mnras.FONT_SIZE)
-    bound_mass_axes.set_ylabel("Bound mass, $10^{11}$ MSun", fontsize=mnras.FONT_SIZE)
-    bound_mass_axes.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
-    bound_mass_axes.set_ylim(0, 2.4)
-
-
-def _prepare_figure(fig, mode: Settings):
-    fig.set_size_inches(mnras.size_from_aspect(mode.figaspect, scale=mode.scale))
-    fig.subplots_adjust(wspace=0, hspace=0)
-
-
-def plot(save: bool, mode: str):
-    mode = modes_settings[mode]
-
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    _prepare_figure(fig, mode)
-
-    for param in params:
-        filename = RESULTS_DIR.format(f"{param.name}.csv")
-        print(f"Reading {filename}")
-        parameters = pd.read_csv(filename, index_col=None)
-        parameters.bound_mass = parameters.bound_mass
-        distances = (parameters.x**2 + parameters.y**2 + parameters.z**2) ** 0.5
-        max_bound_mass = parameters.bound_mass.to_numpy()[0]
-
-        threshold = np.argmax(parameters.bound_mass < 0.01 * max_bound_mass)
-        ax1.plot(
-            parameters.times[:threshold],
-            distances[:threshold],
-            label=f"{param.name}",
-            color=param.line_clr,
-        )
-        ax2.plot(
-            parameters.times,
-            parameters.bound_mass / 1e11,
-            label=f"{param.name}",
-            color=param.line_clr,
-        )
-
-    _prepare_axes(ax1, ax2)
-
-    if save:
-        fig.savefig(RESULTS_DIR.format("result.pdf"), pad_inches=0, bbox_inches="tight")
-    else:
-        plt.show()
-
-
 if __name__ == "__main__":
-    with futures.ProcessPoolExecutor(max_workers=9) as executor:
+    with futures.ProcessPoolExecutor(max_workers=5) as executor:
         executor.map(process, params)

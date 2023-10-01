@@ -51,14 +51,14 @@ def show():
         )
         ax2.plot(
             parameters["times"],
-            parameters["bound_mass"],
+            parameters["bound_mass"] / 1e11,
             label=f"{angle}",
             color=splot.colors[2 * i],
         )
 
     prepare_axes(ax1, ax2)
 
-    plt.savefig(RESULTS_DIR.format("velocity_vector.pdf"), bbox_inches="tight")
+    plt.savefig(RESULTS_DIR.format("example-velocity.pdf"), bbox_inches="tight")
 
 
 if __name__ == "__main__":

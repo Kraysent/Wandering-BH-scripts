@@ -9,7 +9,7 @@ MODELS_DIR = "system_generator/models/{}"
 
 N_DISK = 100000
 N_HALO = int(400000 / 0.4)
-scale = 0.5
+scale = 2.5
 
 
 def process():
@@ -79,7 +79,7 @@ def process():
     particles.velocity = xv[:, 3:] | units.kms
     particles.mass = m | 232500 * units.MSun
 
-    scriptslib.write_hdf5(particles, MODELS_DIR.format("sat1.hdf5"))
+    scriptslib.write_hdf5(particles, MODELS_DIR.format("sat5.hdf5"))
 
 if __name__ == "__main__":
     process()

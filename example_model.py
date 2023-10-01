@@ -14,7 +14,7 @@ from scriptslib import mnras
 from scriptslib import physics
 
 RESULTS_DIR = "example_models/{}"
-DENSITY_CUTOFF_RADIUS = 30
+DENSITY_CUTOFF_RADIUS = 20
 
 
 def prepare_axes(ax, time: float):
@@ -67,7 +67,7 @@ def show():
 
     space_axes[0, 1].add_artist(scalebar)
 
-    axis_extent = 30
+    axis_extent = DENSITY_CUTOFF_RADIUS
     densities_history = []
 
     for ix, iy in np.ndindex(times.shape):
@@ -87,7 +87,7 @@ def show():
             ys=[host_positions[:, 1], sat_positions[:, 1]],
             colors=[splot.colors[0], splot.colors[3]],
             extent=extent,
-            gauss_filter_sigma=0.12,
+            threshold=2,
         )
         rgb_map = np.stack(rgb_map, axis=2)
         params = dict(extent=extent, interpolation="nearest", aspect="auto")

@@ -20,8 +20,8 @@ def generate_snapshot():
     MAX_TIME = 10.0 | units.Gyr
     DT = 0.5**7 | units.Gyr
     EPS = 0.1 | units.kpc
-    HOST_N = 10000
-    SAT_N = 5000
+    HOST_N = 1000000
+    SAT_N = 500000
     INCLINATION = np.deg2rad(0)
     LONG_ASC_NODE = np.deg2rad(45)
     output_times = deque(np.arange(0, 10, 0.5))
@@ -40,7 +40,7 @@ def generate_snapshot():
         sparticles.set_attribute_by_condition(lambda id: id / HOST_N < 0.2, ["id"], "is_barion", True, False),
     )
     sat_particles = sparticles.pipe(
-        scriptslib.read_hdf5(MODELS_DIR.format("sat.hdf5")),
+        scriptslib.read_hdf5(MODELS_DIR.format("sat5.hdf5")),
         sparticles.downsample(SAT_N),
         sparticles.rotate("y", INCLINATION),
         sparticles.append_position(position_unit_vector * 100),
@@ -60,9 +60,19 @@ def generate_snapshot():
     time = 0 | units.Gyr
     i = 0
 
+    bound_masses = []
+    times = []
+
     while time < MAX_TIME:
         log(datetime.now(), i, time.value_in(units.Gyr))
         particles = physics.leapfrog(particles, EPS, DT)
+
+        times.append(time.value_in(units.Gyr))
+        bound_masses.append(
+            physics.bound_subset(particles.select(lambda system: system == "sat", ["system"]), EPS)
+            .total_mass()
+            .value_in(units.MSun)
+        )
 
         if len(output_times) > 0 and time >= output_times[0] | units.Gyr:
             center = physics.median_iterative_center(particles, 8, 5 | units.kpc)
@@ -73,7 +83,7 @@ def generate_snapshot():
                 cutoff_radius=50 | units.kpc,
             )
 
-            fig, (ax1, ax2) = plt.subplots(1, 2)
+            fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
             fig.set_size_inches(20, 10)
             fig.suptitle(f"{time.value_in(units.Gyr):.03f} Gyr")
             ax1.set_xlabel("x, kpc")
@@ -94,6 +104,12 @@ def generate_snapshot():
                 label=f"{time.value_in(units.Gyr):.03f} Gyr",
             )
             ax2.set_yscale("log")
+
+            ax3.plot(times, bound_masses)
+            ax3.set_xlabel("time, Gyr")
+            ax3.set_ylabel("bound mass, MSun")
+            ax3.grid(True)
+
             plt.savefig(f"system_generator/output/{time.value_in(units.Gyr):.03f}.pdf")
             plt.cla()
 

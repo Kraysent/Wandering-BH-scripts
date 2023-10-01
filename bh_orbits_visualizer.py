@@ -9,10 +9,10 @@ from scriptslib import mnras
 from scriptslib import plot as splot
 from scipy import stats
 
-INPUT_DIR = "models_velocity_vector/results/{}"
+INPUT_DIR = "models_velocity_vector/results/mass-1-5/{}"
 OUTPUT_DIR = "bh_orbit_visualizer/{}"
-EXTENT = [0, 1, 0, 30]
-RESOLUTION_1D = 300
+EXTENT = [0, 1, 0, 50]
+RESOLUTION_1D = 200
 
 
 @dataclass
@@ -66,6 +66,9 @@ def show():
         for i in range(len(semimajor_axes)):
             hist[ecc_indices[i] - 1, sma_indices[i] - 1] += 1
 
+        # make the picture less noisy. If the pixel contains only one result, ignore it.
+        hist[hist <= 1] = 0
+
         matrices.append(hist[:, ::-1].T)
         colors.append(param.color)
         legend_patches.append(mpatches.Patch(color=param.color, label=param.name))
@@ -81,8 +84,8 @@ def show():
     ax.set_ylabel("Semi-major axis, kpc", fontsize=mnras.FONT_SIZE)
     ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
     ax.legend(handles=legend_patches, loc="lower left", fontsize=mnras.FONT_SIZE)
-    ax.set_xlim(0.7, 1)
-    ax.set_ylim(13, 30)
+    ax.set_xlim(0.4, 1)
+    ax.set_ylim(10, 40)
     plt.tight_layout()
     fig.savefig(OUTPUT_DIR.format("predictions.pdf"))
 
