@@ -7,14 +7,13 @@ import numpy as np
 from amuse.lab import Particles, ScalarQuantity, VectorQuantity, units
 
 import scriptslib
-from scriptslib import math
 from scriptslib import particles as sparticles
 from scriptslib import physics
 from scriptslib import plot as splot
 from scriptslib.log import log
 
 MODELS_DIR = "system_generator/models/{}"
-
+DEBUG_ENABLED = False
 
 def generate_snapshot():
     MAX_TIME = 10.0 | units.Gyr
@@ -74,7 +73,7 @@ def generate_snapshot():
             .value_in(units.MSun)
         )
 
-        if len(output_times) > 0 and time >= output_times[0] | units.Gyr:
+        if len(output_times) > 0 and (time >= output_times[0] | units.Gyr) and DEBUG_ENABLED:
             center = physics.median_iterative_center(particles, 8, 5 | units.kpc)
             particles.position -= center
             radii, densities = physics.get_density_distribution(

@@ -74,6 +74,9 @@ def rotate(axis: str, angle: float) -> ParticlesFunc:
         else:
             raise ValueError("Unknown axis specified in rotation parameters.")
 
+        if angle == 0:
+            return particles
+
         rot_matrix = Rotation.from_rotvec(angle * vec).as_matrix()
 
         cm = particles.center_of_mass()

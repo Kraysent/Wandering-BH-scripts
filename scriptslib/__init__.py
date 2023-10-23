@@ -27,6 +27,12 @@ def potential_from_particles(particles: Particles) -> agama.Potential:
     return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
 
 
+def density_from_particles(particles: Particles) -> agama.Density:
+    pos = particles.position.value_in(aunits.kpc)
+    mass = particles.mass.value_in(aunits.MSun)
+    return agama.Density(type="DensitySphericalHarmonic", particles=(pos, mass), lmax=0)
+
+
 def read_csv(
     path: str,
     space_unit: core.named_unit | None = None,

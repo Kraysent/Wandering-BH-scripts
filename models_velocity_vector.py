@@ -44,11 +44,11 @@ modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
 rng = range(0, 50)
 params = (
     []
-    + [Params(35, "r", f"i30e35_{i}", "sat5.hdf5") for i in rng]
-    + [Params(40, "r", f"i30e40_{i}", "sat5.hdf5") for i in rng]
-    + [Params(45, "r", f"i30e45_{i}", "sat5.hdf5") for i in rng]
-    + [Params(50, "r", f"i30e50_{i}", "sat5.hdf5") for i in rng]
-    + [Params(55, "r", f"i30e55_{i}", "sat5.hdf5") for i in rng]
+    + [Params(35, "r", f"i30e35_{i}", "sat2.hdf5") for i in rng]
+    + [Params(40, "r", f"i30e40_{i}", "sat2.hdf5") for i in rng]
+    + [Params(45, "r", f"i30e45_{i}", "sat2.hdf5") for i in rng]
+    + [Params(50, "r", f"i30e50_{i}", "sat2.hdf5") for i in rng]
+    + [Params(55, "r", f"i30e55_{i}", "sat2.hdf5") for i in rng]
 )
 
 
@@ -149,5 +149,5 @@ def process(param: Params):
 
 
 if __name__ == "__main__":
-    with futures.ProcessPoolExecutor(max_workers=5) as executor:
+    with futures.ProcessPoolExecutor(max_workers=8) as executor:
         executor.map(process, params)
