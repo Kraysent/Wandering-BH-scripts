@@ -29,6 +29,8 @@ if __name__ == "__main__":
     xv, yv = np.meshgrid(masses, sizes, indexing="ij")
 
     fig, ax = plt.subplots()
+    fig.set_size_inches(mnras.size_from_aspect(1))
+    fig.subplots_adjust(wspace=0, hspace=0)
 
     contour = ax.contour(xv, yv, data, levels=levels)
     ax.clabel(

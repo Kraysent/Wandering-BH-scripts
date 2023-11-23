@@ -61,6 +61,16 @@ def read_hdf5(path: str) -> Particles:
     return io.read_set_from_file(path, "hdf5")
 
 
+def read_nemo(path: str, units: Units = default_units) -> Particles:
+    xv, m = agama.readSnapshot(path)
+    particles = Particles(len(m))
+    particles.position = xv[:, :3] | units.space
+    particles.velocity = xv[:, 3:] | units.vel
+    particles.mass = m | units.mass
+
+    return particles
+
+
 def write_csv(particles: Particles, path: str, units: Units = default_units):
     output_table = pd.DataFrame()
     output_table["x"] = particles.x.value_in(units.space)

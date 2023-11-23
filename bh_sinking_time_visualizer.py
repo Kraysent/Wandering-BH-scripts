@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import seaborn
 import json
 from typing import Callable
 from matplotlib import pyplot as plt
@@ -32,9 +31,10 @@ class ParameterSet:
     levels: list[float]
     level_formatter: Callable
 
+
 parameters = [
     ParameterSet(1e6, splot.colors[0], "$10^6\ M_{\odot}$", [13.0], contour_level_fmt_smaller),
-    ParameterSet(1e7, splot.colors[5], "$10^7\ M_{\odot}$", [7.0, 10.0, 13.0], contour_level_fmt),
+    ParameterSet(1e7, splot.colors[5], "$10^7\ M_{\odot}$", [4.0, 7.0, 10.0, 13.0], contour_level_fmt),
     ParameterSet(1e8, splot.colors[2], "$10^8\ M_{\odot}$", [2.0, 4.0, 7.0, 10.0, 13.0], contour_level_fmt),
 ]
 
