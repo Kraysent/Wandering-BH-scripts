@@ -63,6 +63,21 @@ def downsample(to: int) -> ParticlesFunc:
     return wrapper
 
 
+def align_angular_momentum(vector: np.ndarray) -> ParticlesFunc:
+    def wrapper(particles: Particles) -> Particles:
+        angular_momentum_vector = particles.total_angular_momentum()
+        angular_momentum_vector = angular_momentum_vector / angular_momentum_vector.length()
+
+        rot, _ = Rotation.align_vectors(angular_momentum_vector[:, np.newaxis].T, vector[:, np.newaxis].T)
+        rotation = Rotation.as_matrix(rot)
+
+        particles.position = particles.position @ rotation
+        particles.velocity = particles.velocity @ rotation
+
+        return particles
+
+    return wrapper
+
 def rotate(axis: str, angle: float) -> ParticlesFunc:
     def wrapper(particles: Particles) -> Particles:
         if axis == "x":

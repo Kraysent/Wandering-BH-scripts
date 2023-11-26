@@ -1,5 +1,4 @@
 import agama
-import matplotlib.pyplot as plt
 from amuse.lab import Particles, units
 
 from scriptslib import physics
