@@ -9,9 +9,9 @@ from scriptslib import mnras
 from scriptslib import plot as splot
 from scipy import stats
 
-INPUT_DIR = "models_velocity_vector/results/mass-1-5/{}"
+INPUT_DIR = "models_velocity_vector/results/{}"
 OUTPUT_DIR = "bh_orbit_visualizer/{}"
-EXTENT = [0, 1, 0, 50]
+EXTENT = [0, 1, 0, 75]
 RESOLUTION_1D = 200
 
 
@@ -84,8 +84,8 @@ def show():
     ax.set_ylabel("Semi-major axis, kpc", fontsize=mnras.FONT_SIZE)
     ax.tick_params(axis="both", which="major", labelsize=mnras.FONT_SIZE)
     ax.legend(handles=legend_patches, loc="lower left", fontsize=mnras.FONT_SIZE)
-    ax.set_xlim(0.4, 1)
-    ax.set_ylim(10, 40)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 75)
     plt.tight_layout()
     fig.savefig(OUTPUT_DIR.format("predictions.pdf"))
 

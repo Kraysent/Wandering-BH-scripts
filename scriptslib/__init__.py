@@ -21,10 +21,10 @@ class Units:
 default_units = Units(space=aunits.kpc, vel=aunits.kms, mass=232500 * aunits.MSun, time=aunits.Gyr)
 
 
-def potential_from_particles(particles: Particles) -> agama.Potential:
+def potential_from_particles(particles: Particles, lmax: int = 0, **kwargs) -> agama.Potential:
     pos = particles.position.value_in(aunits.kpc)
     mass = particles.mass.value_in(aunits.MSun)
-    return agama.Potential(type="multipole", particles=(pos, mass), lmax=0)
+    return agama.Potential(type="multipole", particles=(pos, mass), lmax=lmax, **kwargs)
 
 
 def density_from_particles(particles: Particles) -> agama.Density:

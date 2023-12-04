@@ -33,8 +33,11 @@ def generate_spherical_system(n_points: int = 400000) -> Particles:
     return particles
 
 
-def pipe(particles: Particles, *functions: ParticlesFunc):
+def pipe(particles: Particles, *functions: ParticlesFunc, log: bool = False):
     for func in functions:
+        if log:
+            print(f"Running function '{func.__name__}'")
+
         particles = func(particles)
 
     return particles
@@ -64,11 +67,17 @@ def downsample(to: int) -> ParticlesFunc:
 
 
 def align_angular_momentum(vector: np.ndarray) -> ParticlesFunc:
+    """
+    Rotates particles' position and velocity vectors so that their angular momentum is
+    aligned with the given vector.
+    """
+
     def wrapper(particles: Particles) -> Particles:
         angular_momentum_vector = particles.total_angular_momentum()
         angular_momentum_vector = angular_momentum_vector / angular_momentum_vector.length()
+        vector_normalized = vector / (vector**2).sum() ** 0.5
 
-        rot, _ = Rotation.align_vectors(angular_momentum_vector[:, np.newaxis].T, vector[:, np.newaxis].T)
+        rot, _ = Rotation.align_vectors(angular_momentum_vector[:, np.newaxis].T, vector_normalized[:, np.newaxis].T)
         rotation = Rotation.as_matrix(rot)
 
         particles.position = particles.position @ rotation
@@ -77,6 +86,7 @@ def align_angular_momentum(vector: np.ndarray) -> ParticlesFunc:
         return particles
 
     return wrapper
+
 
 def rotate(axis: str, angle: float) -> ParticlesFunc:
     def wrapper(particles: Particles) -> Particles:

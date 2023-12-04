@@ -2,14 +2,16 @@ from dataclasses import dataclass
 import json
 from typing import Callable
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 import numpy as np
 from matplotlib.patches import Patch
 
 from scriptslib import mnras, plot as splot
 
-SMA_MAX = 30
+SMA_MAX = 30  # kpc
 MAX_TIME = 13.7  # Gyr
+PATH_PREFIX = "rotated/"
 
 RESULTS_DIR = "bh_sinking_times/results/{}"
 MODELS_DIR = "bh_sinking_times/models/{}"
@@ -28,14 +30,67 @@ class ParameterSet:
     mass: float
     color: tuple[int, int, int]
     label: str
+    linestyle: str
     levels: list[float]
+    path_prefix: str
     level_formatter: Callable
 
 
 parameters = [
-    ParameterSet(1e6, splot.colors[0], "$10^6\ M_{\odot}$", [13.0], contour_level_fmt_smaller),
-    ParameterSet(1e7, splot.colors[5], "$10^7\ M_{\odot}$", [4.0, 7.0, 10.0, 13.0], contour_level_fmt),
-    ParameterSet(1e8, splot.colors[2], "$10^8\ M_{\odot}$", [2.0, 4.0, 7.0, 10.0, 13.0], contour_level_fmt),
+    ParameterSet(
+        2e6,
+        splot.colors[0],
+        "BH on inclined orbit, M = $2 \cdot 10^6\ M_{\odot}$",
+        "solid",
+        [13.0],
+        "rotated/",
+        contour_level_fmt_smaller,
+    ),
+    ParameterSet(
+        1e7,
+        splot.colors[5],
+        "BH on inclined orbit, M = $10^7\ M_{\odot}$",
+        "solid",
+        [8.0, 13.0],
+        "rotated/",
+        contour_level_fmt,
+    ),
+    ParameterSet(
+        1e8,
+        splot.colors[2],
+        "BH on inclined orbit, M = $10^8\ M_{\odot}$",
+        "solid",
+        [3.0, 8.0, 13.0],
+        "rotated/",
+        contour_level_fmt,
+    ),
+    ParameterSet(
+        2e6,
+        splot.colors[0],
+        "BH in disk, M = $2 \cdot 10^6\ M_{\odot}$",
+        "dotted",
+        [13.0],
+        "in_plane/",
+        contour_level_fmt_smaller,
+    ),
+    ParameterSet(
+        1e7,
+        splot.colors[5],
+        "BH in disk, M = $10^7\ M_{\odot}$",
+        "dotted",
+        [8.0, 13.0],
+        "in_plane/",
+        contour_level_fmt,
+    ),
+    ParameterSet(
+        1e8,
+        splot.colors[2],
+        "BH in disk, M = $10^8\ M_{\odot}$",
+        "dotted",
+        [3.0, 8.0, 13.0],
+        "in_plane/",
+        contour_level_fmt,
+    ),
 ]
 
 
@@ -54,7 +109,9 @@ def display(additional_results: str | None = None):
     legend_patches = []
 
     for params in parameters:
-        sinking_times = np.genfromtxt(RESULTS_DIR.format(f"bound_time_{params.mass:.2E}_20.csv"), delimiter=",")
+        sinking_times = np.genfromtxt(
+            RESULTS_DIR.format(f"{params.path_prefix}bound_time_{params.mass:.2E}_20.csv"), delimiter=","
+        )
         ecc_span = np.linspace(0, 1, sinking_times.shape[0])
         sma_span = np.linspace(0, SMA_MAX, sinking_times.shape[1])
         eccs, smas = np.meshgrid(ecc_span, sma_span, indexing="ij")
@@ -64,6 +121,7 @@ def display(additional_results: str | None = None):
             smas,
             sinking_times,
             colors=[params.color],
+            linestyles=params.linestyle,
             levels=params.levels,
         )
         ax.clabel(
@@ -73,7 +131,7 @@ def display(additional_results: str | None = None):
             fontsize=mnras.FONT_SIZE * 0.75,
             inline_spacing=0,
         )
-        legend_patches.append(Patch(facecolor=params.color, edgecolor=params.color, label=params.label))
+        legend_patches.append(Line2D([0], [0], color=params.color, label=params.label, linestyle=params.linestyle))
 
         if additional_results is not None:
             with open(MODELS_DIR.format(additional_results), "r") as j:

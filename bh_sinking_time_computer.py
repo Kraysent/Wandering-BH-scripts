@@ -1,25 +1,43 @@
-import json
+from dataclasses import dataclass
 from typing import Callable
 
 import agama
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-from matplotlib import figure
-from matplotlib.markers import MarkerStyle
 
 import scriptslib
-from scriptslib import mnras
+from scriptslib import scheduling
+from scriptslib.scheduling import SchedulerMode
 from scriptslib.log import log as slog
+from scriptslib import particles as sparticles
 
 RESULTS_DIR = "bh_sinking_times/results/{}"
 MODELS_DIR = "bh_sinking_times/models/{}"
 
-BH_MASS = 1e6  # MSun
 THRESHOLDS = [2, 5, 10, 20]  # pc
 SMA_MAX = 30
 MAX_TIME = 13.7  # Gyr
 RESOLUTION = 30
+
+
+@dataclass
+class ParameterSet:
+    bh_mass: float
+    model_angular_momentum_direction: np.ndarray
+    prefix: str = ""
+
+    def __str__(self) -> str:
+        return f"{self.bh_mass:.2E}, {self.prefix}"
+
+
+parameters = [
+    ParameterSet(2e6, np.array([0, 0, 1]), "in_plane/"),
+    ParameterSet(1e7, np.array([0, 0, 1]), "in_plane/"),
+    ParameterSet(1e8, np.array([0, 0, 1]), "in_plane/"),
+    ParameterSet(2e6, np.array([0, np.sin(np.deg2rad(30)), 1 * np.cos(np.deg2rad(30))]), "rotated/"),
+    ParameterSet(1e7, np.array([0, np.sin(np.deg2rad(30)), 1 * np.cos(np.deg2rad(30))]), "rotated/"),
+    ParameterSet(1e8, np.array([0, np.sin(np.deg2rad(30)), 1 * np.cos(np.deg2rad(30))]), "rotated/"),
+]
 
 
 def get_df_in_potential(density_func, mass, ln_lambda, sigma):
@@ -77,17 +95,23 @@ def integrate(x0: np.ndarray, v0: np.ndarray, ode: Callable, times: np.ndarray) 
     return scipy.integrate.odeint(ode, ic, times)
 
 
-def compute():
+def compute(params: ParameterSet):
     agama.setUnits(mass=1, length=1, velocity=1)  # 1 MSun, 1 kpc, 1 kms => time = 0.98 Gyr
-    particles = scriptslib.read_csv("system_generator/models/particles.csv")
-    potential = scriptslib.potential_from_particles(particles)
+
+    potential = scriptslib.potential_from_particles(
+        sparticles.pipe(
+            scriptslib.read_hdf5(MODELS_DIR.format("particles.hdf5")),
+            sparticles.downsample(1000000),
+            sparticles.align_angular_momentum(params.model_angular_momentum_direction),
+        ), lmax=15, symmetry="axisymmetric"
+    )
 
     ecc_span = np.linspace(0.01, 0.99, RESOLUTION)
     sma_span = np.linspace(1, SMA_MAX, RESOLUTION)
     eccs, smas = np.meshgrid(ecc_span, sma_span, indexing="ij")
     sinking_times = {threshold: np.zeros(shape=eccs.shape) for threshold in THRESHOLDS}
 
-    ode = get_ode_in_potential(potential, BH_MASS, 5)
+    ode = get_ode_in_potential(potential, params.bh_mass, 5)
     times = np.linspace(0, MAX_TIME, 2**10)
 
     for iy, ix in np.ndindex(smas.shape):
@@ -108,11 +132,12 @@ def compute():
 
     for threshold in THRESHOLDS:
         np.savetxt(
-            RESULTS_DIR.format(f"bound_time_{BH_MASS:.2E}_{threshold}.csv"),
+            RESULTS_DIR.format(f"{params.prefix}bound_time_{params.bh_mass:.2E}_{threshold}.csv"),
             sinking_times[threshold],
             delimiter=",",
         )
 
 
 if __name__ == "__main__":
-    compute(additional_results="results.json")
+    scheduler = scheduling.LinearScheduler(compute, parameters)
+    scheduler.run(SchedulerMode.Multiprocessed)
