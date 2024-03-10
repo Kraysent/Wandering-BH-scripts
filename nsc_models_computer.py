@@ -1,15 +1,14 @@
+import os
 from dataclasses import dataclass
+from typing import Callable
+
 import agama
-import numpy
 import matplotlib.pyplot as plt
+import numpy
+import numpy as np
 import scipy
 
-from typing import Callable
-import numpy as np
-from scriptslib import ellipse_approx
-import os
-
-from scriptslib import scheduling
+from scriptslib import ellipse_approx, scheduling
 
 
 @dataclass

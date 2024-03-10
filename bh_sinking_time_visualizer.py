@@ -1,13 +1,14 @@
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from typing import Callable
+
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
-import numpy as np
-from matplotlib.patches import Patch
 
-from scriptslib import mnras, plot as splot
+from scriptslib import mnras
+from scriptslib import plot as splot
 
 SMA_MAX = 30  # kpc
 MAX_TIME = 13.7  # Gyr

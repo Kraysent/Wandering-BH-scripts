@@ -6,10 +6,10 @@ import numpy as np
 import scipy
 
 import scriptslib
-from scriptslib import scheduling
-from scriptslib.scheduling import SchedulerMode
-from scriptslib.log import log as slog
 from scriptslib import particles as sparticles
+from scriptslib import scheduling
+from scriptslib.log import log as slog
+from scriptslib.scheduling import SchedulerMode
 
 RESULTS_DIR = "bh_sinking_times/results/{}"
 MODELS_DIR = "bh_sinking_times/models/{}"
@@ -103,7 +103,9 @@ def compute(params: ParameterSet):
             scriptslib.read_hdf5(MODELS_DIR.format("particles.hdf5")),
             sparticles.downsample(1000000),
             sparticles.align_angular_momentum(params.model_angular_momentum_direction),
-        ), lmax=15, symmetry="axisymmetric"
+        ),
+        lmax=15,
+        symmetry="axisymmetric",
     )
 
     ecc_span = np.linspace(0.01, 0.99, RESOLUTION)

@@ -1,9 +1,9 @@
-from concurrent import futures
-from contextlib import redirect_stdout
-from enum import Enum
 import functools
 import os
 import sys
+from concurrent import futures
+from contextlib import redirect_stdout
+from enum import Enum
 from typing import Any, Callable
 
 import numpy as np

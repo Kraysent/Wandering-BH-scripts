@@ -8,7 +8,8 @@ import scipy
 from amuse.lab import units
 
 import scriptslib
-from scriptslib import mnras, plot as splot
+from scriptslib import mnras
+from scriptslib import plot as splot
 
 RESULTS_DIR = "eccentricity_example/results/{}"
 

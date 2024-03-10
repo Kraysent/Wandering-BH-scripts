@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterator
 
+import numpy as np
 import pandas as pd
+from amuse.lab import Particles, ScalarQuantity, units
+
 import scriptslib
 from scriptslib import particles as sparticles
-import numpy as np
-from amuse.lab import units, Particles, ScalarQuantity
-
 from scriptslib import physics
 
 

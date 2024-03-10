@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import agama, numpy
+import agama
+import numpy
 from amuse.lab import Particles, units
 
 import scriptslib

@@ -2,7 +2,9 @@ import numpy as np
 import pandas
 import pytest
 from amuse.lab import Particles, units
+
 from scriptslib.particles import align_angular_momentum
+
 
 @pytest.mark.parametrize(
     "initial_position, initial_velocity, expected_angular_momentum",

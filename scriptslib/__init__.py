@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
 import agama
-from amuse import io
 import numpy as np
 import pandas as pd
+from amuse import io
 from amuse.lab import Particles
 from amuse.lab import units as aunits
 from amuse.units import core

@@ -4,10 +4,10 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import patches as mpatches
+from scipy import stats
 
 from scriptslib import mnras
 from scriptslib import plot as splot
-from scipy import stats
 
 INPUT_DIR = "models_velocity_vector/results/{}"
 OUTPUT_DIR = "bh_orbit_visualizer/{}"

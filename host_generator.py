@@ -1,6 +1,6 @@
-import agama
-
 from configparser import RawConfigParser
+
+import agama
 import numpy as np
 
 

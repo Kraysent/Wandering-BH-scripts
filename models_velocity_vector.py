@@ -4,13 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterator
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from amuse.lab import Particles, ScalarQuantity, units
 
 import scriptslib
-from scriptslib import ellipse_approx, mnras
+from scriptslib import ellipse_approx
 from scriptslib import particles as sparticles
 from scriptslib import physics
 
@@ -41,7 +40,7 @@ Settings = namedtuple("Settings", ["figaspect", "scale"])
 
 modes_settings = {"paper": Settings(1, 1), "presentation": Settings(0.6, 1.5)}
 
-rng = range(0, 50)
+rng = range(0, 150)
 params = (
     []
     + [Params(35, "r", f"i30e35_{i}", "sat2.hdf5") for i in rng]
@@ -62,7 +61,7 @@ def prepare_particle_set(params: Params):
     from host centre to its centre.
     """
     host_particles = sparticles.pipe(
-        scriptslib.read_csv(MODELS_DIR.format("host.csv")),
+        scriptslib.read_nemo("system_generator/models/host_galaxy.nemo"),
         sparticles.downsample(HOST_SAMPLE),
         sparticles.set_attribute("subset", "host"),
     )

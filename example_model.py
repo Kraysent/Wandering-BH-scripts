@@ -1,17 +1,17 @@
+import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
+import numpy as np
+from amuse.lab import units
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
-import numpy as np
-import scriptslib
-from scriptslib import particles as sparticles, plot as splot
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-import matplotlib.font_manager as fm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from amuse.lab import units
-import matplotlib.pyplot as plt
-
+import scriptslib
 from scriptslib import mnras
+from scriptslib import particles as sparticles
 from scriptslib import physics
+from scriptslib import plot as splot
 
 RESULTS_DIR = "example_models/{}"
 DENSITY_CUTOFF_RADIUS = 20

@@ -1,8 +1,9 @@
-from matplotlib import pyplot as plt
+from math import floor, log10
+
 import numpy as np
+from matplotlib import pyplot as plt
 
 from scriptslib import mnras
-from math import floor, log10
 
 RESULTS_DIR = "nsc_models/results/{}"
 

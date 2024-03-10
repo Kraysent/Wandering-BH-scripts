@@ -21,7 +21,7 @@ def generate_snapshot():
     EPS = 0.1 | units.kpc
     HOST_N = 1000000
     SAT_N = 500000
-    INCLINATION = np.deg2rad(0)
+    INCLINATION = np.deg2rad(30)
     LONG_ASC_NODE = np.deg2rad(45)
     output_times = deque(np.arange(0, 10, 0.5))
     position_unit_vector = [np.cos(INCLINATION), 0, np.sin(INCLINATION)] | units.kpc
@@ -32,14 +32,14 @@ def generate_snapshot():
     ] | units.kms
 
     host_particles = sparticles.pipe(
-        scriptslib.read_csv(MODELS_DIR.format("host.csv")),
+        scriptslib.read_nemo(MODELS_DIR.format("host_galaxy.nemo")),
         sparticles.downsample(HOST_N),
         sparticles.set_attribute("system", "host"),
         sparticles.enumerate(),
         sparticles.set_attribute_by_condition(lambda id: id / HOST_N < 0.2, ["id"], "is_barion", True, False),
     )
     sat_particles = sparticles.pipe(
-        scriptslib.read_hdf5(MODELS_DIR.format("sat5.hdf5")),
+        scriptslib.read_hdf5(MODELS_DIR.format("sat2.hdf5")),
         sparticles.downsample(SAT_N),
         sparticles.rotate("y", INCLINATION),
         sparticles.append_position(position_unit_vector * 100),
@@ -120,7 +120,7 @@ def generate_snapshot():
 
     center = physics.median_iterative_center(particles, 8, 5 | units.kpc)
     particles.position -= center
-    scriptslib.write_hdf5(particles, MODELS_DIR.format("particles.hdf5"))
+    scriptslib.write_hdf5(particles, MODELS_DIR.format("merger.hdf5"))
 
 
 if __name__ == "__main__":
